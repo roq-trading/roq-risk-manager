@@ -1,6 +1,6 @@
-set(TARGET_NAME "${PROJECT_NAME}-json")
+set(TARGET_NAME "${PROJECT_NAME}-tools")
 
-set(SOURCES response.cpp session.cpp)
+set(SOURCES simple.cpp)
 
 add_library("${TARGET_NAME}" OBJECT ${SOURCES})
 

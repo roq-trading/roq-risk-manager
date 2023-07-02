@@ -14,21 +14,12 @@ requirements:
     - cmake
     - make
   host:
-    - abseil-cpp
-    - benchmark
-    - catch2  # [linux]
-    - nlohmann_json
     - roq-client
-    - roq-fix-bridge
-    - roq-io
-    - roq-oss-catch2  # [osx]
-    - roq-oss-libevent
-    - roq-oss-re2
-    - roq-oss-tomlplusplus
-    - roq-web
+    - abseil-cpp
+    - catch2
 
 about:
   license: BSD-3-Clause
   license_family: BSD
   license_file: LICENSE
-  summary: Risk manager (a template project)
+  summary: Strategy (a template project)
