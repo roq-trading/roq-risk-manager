@@ -52,25 +52,12 @@ void Strategy::operator()(roq::Event<roq::GatewayStatus> const &) {
 void Strategy::operator()(roq::Event<roq::ReferenceData> const &) {
 }
 
-void Strategy::operator()(roq::Event<roq::MarketStatus> const &) {
+void Strategy::operator()(roq::Event<roq::OrderUpdate> const &event) {
+  roq::log::info("event={}"sv, event);
 }
 
-void Strategy::operator()(roq::Event<roq::MarketByPriceUpdate> const &) {
-}
-
-void Strategy::operator()(roq::Event<roq::OrderAck> const &) {
-}
-
-void Strategy::operator()(roq::Event<roq::OrderUpdate> const &) {
-}
-
-void Strategy::operator()(roq::Event<roq::TradeUpdate> const &) {
-}
-
-void Strategy::operator()(roq::Event<roq::PositionUpdate> const &) {
-}
-
-void Strategy::operator()(roq::Event<roq::FundsUpdate> const &) {
+void Strategy::operator()(roq::Event<roq::TradeUpdate> const &event) {
+  roq::log::info("event={}"sv, event);
 }
 
 }  // namespace simple

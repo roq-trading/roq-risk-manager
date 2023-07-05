@@ -20,13 +20,8 @@ struct Strategy final : public roq::client::Handler {
   void operator()(roq::Event<roq::DownloadEnd> const &) override;
   void operator()(roq::Event<roq::GatewayStatus> const &) override;
   void operator()(roq::Event<roq::ReferenceData> const &) override;
-  void operator()(roq::Event<roq::MarketStatus> const &) override;
-  void operator()(roq::Event<roq::MarketByPriceUpdate> const &) override;
-  void operator()(roq::Event<roq::OrderAck> const &) override;
   void operator()(roq::Event<roq::OrderUpdate> const &) override;
   void operator()(roq::Event<roq::TradeUpdate> const &) override;
-  void operator()(roq::Event<roq::PositionUpdate> const &) override;
-  void operator()(roq::Event<roq::FundsUpdate> const &) override;
 
  private:
   roq::client::Dispatcher &dispatcher_;
