@@ -9,25 +9,17 @@ namespace simple {
 using flags::Flags;
 
 void Config::dispatch(Handler &handler) const {
-  // settings
-  handler(roq::client::Settings{
-      .order_cancel_policy = roq::OrderCancelPolicy::BY_ACCOUNT,
-      .order_management = {},
-  });
   // accounts
-  handler(roq::client::Account{
+  auto account = roq::client::Account{
       .regex = Flags::accounts(),
-  });
+  };
+  handler(account);
   // symbols
-  handler(roq::client::Symbol{
+  auto symbol = roq::client::Symbol{
       .regex = Flags::symbols(),
       .exchange = Flags::exchange(),
-  });
-  // currencies
-  handler(roq::client::Symbol{
-      .regex = Flags::currencies(),
-      .exchange = {},
-  });
+  };
+  handler(symbol);
 }
 
 }  // namespace simple

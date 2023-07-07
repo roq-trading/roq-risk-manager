@@ -7,9 +7,6 @@
 
 #include "roq/service.hpp"
 
-// note! the following are your implementations
-
-#include "simple/config.hpp"
 #include "simple/strategy.hpp"
 
 namespace simple {
@@ -21,9 +18,6 @@ struct Application final : public roq::Service {
   int main(int argc, char **argv) override;
 
   int main_helper(std::span<std::string_view> const &args);
-
-  void simulate(Config const &, std::span<std::string_view> const &connections);
-  void live(Config const &, std::span<std::string_view> const &connections);
 
  private:
   using value_type = Strategy;  // note!

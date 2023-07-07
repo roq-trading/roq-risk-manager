@@ -1,0 +1,25 @@
+{
+  "name": "Flags",
+  "type": "flags",
+  "values": [
+    {
+      "name": "accounts",
+      "type": "std::string",
+      "validator": "roq::core::flags::NonEmpty",
+      "default": "A1",
+      "description": "account (regex)"
+    },
+    {
+      "name": "exchange",
+      "type": "std::string",
+      "validator": "roq::core::flags::NonEmpty",
+      "description": "exchange"
+    },
+    {
+      "name": "symbols",
+      "type": "std::string",
+      "validator": "roq::core::flags::NonEmpty",
+      "description": "symbol"
+    }
+  ]
+}

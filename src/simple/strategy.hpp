@@ -4,10 +4,12 @@
 
 #include "roq/client.hpp"
 
+#include "simple/shared.hpp"
+
 namespace simple {
 
 struct Strategy final : public roq::client::Handler {
-  explicit Strategy(roq::client::Dispatcher &);
+  explicit Strategy(roq::client::Dispatcher &, Shared &);
 
   Strategy(Strategy &&) = default;
   Strategy(Strategy const &) = delete;
@@ -25,6 +27,7 @@ struct Strategy final : public roq::client::Handler {
 
  private:
   roq::client::Dispatcher &dispatcher_;
+  Shared &shared_;
 };
 
 }  // namespace simple

@@ -1,17 +1,33 @@
 cmake_minimum_required(VERSION 3.12)
 
+# cmake
+
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/scripts/cmake" ${CMAKE_MODULE_PATH})
+
+# project
+
 project(risk-manager)
+
+# conda
 
 if(DEFINED ENV{CONDA_PREFIX} AND NOT DEFINED ENV{CONDA_BUILD})
   set(CMAKE_INSTALL_PREFIX $ENV{CONDA_PREFIX})
   set(CMAKE_FIND_ROOT_PATH $ENV{CONDA_PREFIX})
 endif()
 
+# rpath
+
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+# c++
 
 set(CMAKE_CXX_STANDARD 20)
 
+# filesystem
+
 include(GNUInstallDirs)
+
+# dependencies
 
 find_package(absl REQUIRED)
 find_package(fmt REQUIRED)
@@ -25,7 +41,18 @@ else()
   set(RT_LIBRARIES)
 endif()
 
-include_directories("${CMAKE_SOURCE_DIR}/src")
+find_package(Catch2 REQUIRED)
+
+find_program(CLANG_FORMAT clang-format REQUIRED)
+
+# include
+
+include_directories(
+  "${CMAKE_SOURCE_DIR}/src"
+  # >>> autogen >>>
+  "${CMAKE_BINARY_DIR}/src")
+
+# sub-projects
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/src")
 
@@ -34,8 +61,6 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/src")
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   include(CTest)
 endif()
-
-find_package(Catch2 REQUIRED)
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/test")
 

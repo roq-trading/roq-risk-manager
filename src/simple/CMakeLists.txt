@@ -2,7 +2,15 @@ set(TARGET_NAME "${PROJECT_NAME}-simple")
 
 add_subdirectory(flags)
 
-add_executable("${TARGET_NAME}" application.cpp config.cpp strategy.cpp main.cpp)
+add_executable(
+  "${TARGET_NAME}"
+  account.cpp
+  application.cpp
+  config.cpp
+  instrument.cpp
+  shared.cpp
+  strategy.cpp
+  main.cpp)
 
 target_link_libraries(
   "${TARGET_NAME}"
