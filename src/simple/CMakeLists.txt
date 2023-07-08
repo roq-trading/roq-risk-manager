@@ -7,6 +7,7 @@ set(SOURCES
     application.cpp
     config.cpp
     instrument.cpp
+    settings.cpp
     shared.cpp
     strategy.cpp
     main.cpp)
