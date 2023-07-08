@@ -2,16 +2,16 @@ set(TARGET_NAME ${PROJECT_NAME}-simple)
 
 add_subdirectory(flags)
 
-set(SOURCES account.cpp
-  application.cpp
-  config.cpp
-  instrument.cpp
-  shared.cpp
-  strategy.cpp
-  main.cpp)
+set(SOURCES
+    account.cpp
+    application.cpp
+    config.cpp
+    instrument.cpp
+    shared.cpp
+    strategy.cpp
+    main.cpp)
 
-add_executable(
-  ${TARGET_NAME} ${SOURCES})
+add_executable(${TARGET_NAME} ${SOURCES})
 
 add_dependencies(${TARGET_NAME} ${TARGET_NAME}-flags-autogen-headers)
 
