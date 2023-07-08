@@ -2,22 +2,21 @@
 
 #include "simple/config.hpp"
 
-#include "simple/flags/flags.hpp"
-
 namespace simple {
 
-using flags::Flags;
+Config::Config(Settings const &settings) : settings_{settings} {
+}
 
 void Config::dispatch(Handler &handler) const {
   // accounts
   auto account = roq::client::Account{
-      .regex = Flags::accounts(),
+      .regex = settings_.accounts,
   };
   handler(account);
   // symbols
   auto symbol = roq::client::Symbol{
-      .regex = Flags::symbols(),
-      .exchange = Flags::exchange(),
+      .regex = settings_.symbols,
+      .exchange = settings_.exchange,
   };
   handler(symbol);
 }

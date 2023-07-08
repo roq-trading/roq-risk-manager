@@ -8,6 +8,7 @@
 #include "roq/client.hpp"
 
 #include "simple/config.hpp"
+#include "simple/settings.hpp"
 #include "simple/shared.hpp"
 
 using namespace std::chrono_literals;
@@ -28,7 +29,8 @@ int Application::main_helper(std::span<std::string_view> const &args) {
   assert(!std::empty(args));
   if (std::size(args) == 1)
     roq::log::fatal("Unexpected"sv);
-  Config config;
+  Settings settings;
+  Config config{settings};
   Shared shared;
   auto connections = args.subspan(1);
   roq::client::Trader{config, connections}.dispatch<value_type>(shared);
