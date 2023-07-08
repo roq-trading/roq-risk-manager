@@ -1,4 +1,4 @@
-set(TARGET_NAME "${PROJECT_NAME}-simple-flags")
+set(TARGET_NAME ${PROJECT_NAME}-simple-flags)
 
 set(SOURCES flags.cpp)
 
@@ -18,7 +18,7 @@ roq_autogen(
   SOURCES
   ${AUTOGEN_SCHEMAS})
 
-add_custom_target(flags-autogen-headers ALL DEPENDS ${AUTOGEN_HEADERS})
+add_custom_target(${TARGET_NAME}-autogen-headers ALL DEPENDS ${AUTOGEN_HEADERS})
 
 roq_autogen(
   OUTPUT
@@ -32,8 +32,10 @@ roq_autogen(
   SOURCES
   ${AUTOGEN_SCHEMAS})
 
-roq_gitignore(OUTPUT ".gitignore" SOURCES "${TARGET_NAME}" ${AUTOGEN_HEADERS} ${AUTOGEN_SOURCES})
+roq_gitignore(OUTPUT ".gitignore" SOURCES ${TARGET_NAME} ${AUTOGEN_HEADERS} ${AUTOGEN_SOURCES})
 
-add_library("${TARGET_NAME}" OBJECT ${SOURCES} ${AUTOGEN_SOURCES})
+add_library(${TARGET_NAME} OBJECT ${SOURCES} ${AUTOGEN_SOURCES})
 
-target_link_libraries("${TARGET_NAME}" absl::flags)
+add_dependencies(${TARGET_NAME} ${TARGET_NAME}-autogen-headers)
+
+target_link_libraries(${TARGET_NAME} absl::flags)
