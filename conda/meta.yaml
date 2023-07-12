@@ -18,6 +18,7 @@ requirements:
     - abseil-cpp
     - catch2
     - roq-client
+    - roq-flags
     - roq-oss-benchmark
 
 about:

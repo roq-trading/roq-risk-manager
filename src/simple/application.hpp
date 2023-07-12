@@ -15,9 +15,7 @@ struct Application final : public roq::Service {
   using Service::Service;  // inherit constructors
 
  protected:
-  int main(int argc, char **argv) override;
-
-  int main_helper(std::span<std::string_view> const &args);
+  int main(roq::args::Parser const &) override;
 
  private:
   using value_type = Strategy;  // note!
