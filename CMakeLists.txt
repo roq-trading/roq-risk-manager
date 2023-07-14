@@ -59,6 +59,13 @@ include_directories(
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+# https://stackoverflow.com/a/73090806
+
+if(APPLE)
+  target_compile_definitions(${PROJECT_NAME} INTERFACE FMT_USE_NONTYPE_TEMPLATE_ARGS=1)
+  add_compile_definitions(FMT_USE_NONTYPE_TEMPLATE_ARGS=1)
+endif()
+
 # test
 
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
