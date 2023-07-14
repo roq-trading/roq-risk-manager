@@ -32,7 +32,7 @@ target_link_libraries(
 target_compile_definitions(${TARGET_NAME} PRIVATE ROQ_PACKAGE_NAME="${PROJECT_NAME}")
 
 if(APPLE)
-  target_compile_definitions(${TARGET_NAME} INTERFACE FMT_USE_NONTYPE_TEMPLATE_ARGS=1)
+  target_compile_definitions(${TARGET_NAME} PRIVATE FMT_USE_NONTYPE_TEMPLATE_ARGS=1)
 endif()
 
 install(TARGETS ${TARGET_NAME})
