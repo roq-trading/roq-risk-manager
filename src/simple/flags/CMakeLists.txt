@@ -38,4 +38,8 @@ add_library(${TARGET_NAME} OBJECT ${SOURCES} ${AUTOGEN_SOURCES})
 
 add_dependencies(${TARGET_NAME} ${TARGET_NAME}-autogen-headers)
 
+if(APPLE)
+  target_compile_definitions(${TARGET_NAME} INTERFACE FMT_USE_NONTYPE_TEMPLATE_ARGS=1)
+endif()
+
 target_link_libraries(${TARGET_NAME} absl::flags)
