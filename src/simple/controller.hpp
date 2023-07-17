@@ -2,6 +2,10 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_map.h>
+
+#include <vector>
+
 #include "roq/client.hpp"
 
 #include "simple/config.hpp"
@@ -30,6 +34,8 @@ struct Controller final : public roq::client::Handler {
  private:
   roq::client::Dispatcher &dispatcher_;
   Shared shared_;
+  absl::flat_hash_set<std::string> published_accounts_;
+  std::vector<roq::RiskLimit> risk_limit_buffer_;
 };
 
 }  // namespace simple

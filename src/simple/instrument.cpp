@@ -8,7 +8,8 @@ using namespace std::literals;
 
 namespace simple {
 
-Instrument::Instrument(uint32_t id) : id{id} {
+Instrument::Instrument(uint32_t id, std::string_view const &exchange, std::string_view const &symbol)
+    : id{id}, exchange{exchange}, symbol{symbol} {
 }
 
 bool Instrument::operator()(roq::ReferenceData const &reference_data) {

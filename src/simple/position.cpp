@@ -11,11 +11,11 @@ namespace simple {
 Position::Position(Limit const &limit) : long_limit_{limit.long_limit}, short_limit_{limit.short_limit} {
 }
 
-void Position::operator()(roq::ReferenceData const &, Account const &, Instrument const &) {
+void Position::operator()(roq::ReferenceData const &, Instrument const &) {
   // XXX TODO we must re-scale when reference data changes
 }
 
-void Position::operator()(roq::TradeUpdate const &trade_update, Account const &, Instrument const &instrument) {
+void Position::operator()(roq::TradeUpdate const &trade_update, Instrument const &instrument) {
   for (auto &item : trade_update.fills) {
     assert(!std::empty(item.external_trade_id));
     auto res = fills_.emplace(item.external_trade_id);

@@ -24,8 +24,16 @@ struct Account final {
   void operator()(roq::ReferenceData const &);
   void operator()(roq::TradeUpdate const &);
 
+  template <typename Callback>
+  void get_position(uint32_t instrument_id, Callback callback) {
+    auto iter = positions_.find(instrument_id);
+    if (iter != std::end(positions_))
+      callback((*iter).second);
+  }
+
  protected:
-  void dispatch(auto &value);
+  template <typename Callback>
+  void dispatch(auto &value, Callback);
 
  private:
   Shared &shared_;

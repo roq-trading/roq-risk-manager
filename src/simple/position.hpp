@@ -12,16 +12,21 @@
 
 namespace simple {
 
-struct Account;  // note! circular
-
 struct Position final {
   explicit Position(Limit const &);
 
   Position(Position &&) = default;
   Position(Position const &) = delete;
 
-  void operator()(roq::ReferenceData const &, Account const &, Instrument const &);
-  void operator()(roq::TradeUpdate const &, Account const &, Instrument const &);
+  void operator()(roq::ReferenceData const &, Instrument const &);
+  void operator()(roq::TradeUpdate const &, Instrument const &);
+
+  auto buy_limit() const {
+    return long_limit_;  // XXX TODO
+  }
+  auto sell_limit() const {
+    return short_limit_;  // XXX TODO
+  }
 
  private:
   double const long_limit_;

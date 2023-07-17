@@ -51,11 +51,11 @@ Instrument &Shared::get_instrument(std::string_view const &exchange, std::string
   auto instrument_id = get_instrument_id(exchange, symbol);
   auto iter = instruments_.find(instrument_id);
   if (iter == std::end(instruments_))
-    iter = instruments_.try_emplace(instrument_id, instrument_id).first;
+    iter = instruments_.try_emplace(instrument_id, instrument_id, exchange, symbol).first;
   return (*iter).second;
 }
 
-// note! lookup happens rarely -- no need to optimize
+// note! lookup is rare -- no need to optimize
 Limit Shared::get_limit(
     std::string_view const &account, std::string_view const &exchange, std::string_view const &symbol) const {
   auto iter_1 = limits_.find(account);
@@ -70,6 +70,12 @@ Limit Shared::get_limit(
   if (iter_3 == std::end(tmp_2))
     return {};
   return (*iter_3).second;
+}
+
+void Shared::publish(std::string_view const &account) {
+  auto &tmp = publish_[account];
+  for (auto &[instrument_id, _] : instruments_)
+    tmp.emplace(instrument_id);
 }
 
 }  // namespace simple

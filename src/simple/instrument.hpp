@@ -4,18 +4,19 @@
 
 #include <limits>
 
-#include "roq/decimals.hpp"
-#include "roq/reference_data.hpp"
+#include "roq/api.hpp"
 
 namespace simple {
 
 struct Instrument final {
-  Instrument(uint32_t id);
+  Instrument(uint32_t id, std::string_view const &exchange, std::string_view const &symbol);
 
   Instrument(Instrument &&) = default;
   Instrument(Instrument const &) = delete;
 
   uint32_t const id;
+  roq::Exchange const exchange;
+  roq::Symbol const symbol;
 
   bool operator()(roq::ReferenceData const &);
 
