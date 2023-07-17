@@ -8,13 +8,20 @@ using namespace std::literals;
 
 namespace simple {
 
-void Instrument::operator()(roq::ReferenceData const &reference_data) {
-  if (!std::isnan(reference_data.min_trade_vol))
-    quantity_decimals_ = roq::client::Number::increment_to_decimals(reference_data.min_trade_vol);
+Instrument::Instrument(uint32_t id) : id{id} {
 }
 
-int64_t Instrument::quantity_as_integer(double quantity) const {
-  return static_cast<int64_t>(quantity);  // XXX TODO use decimals (need API)
+bool Instrument::operator()(roq::ReferenceData const &reference_data) {
+  if (std::isnan(reference_data.min_trade_vol))
+    return false;
+  min_trade_vol_ = reference_data.min_trade_vol;
+  quantity_decimals_ = roq::client::Number::increment_to_decimals(min_trade_vol_);
+  return true;
+}
+
+int64_t Instrument::quantity_to_internal(double quantity) const {
+  auto result = roq::client::Quantity::to_internal(quantity, min_trade_vol_, quantity_decimals_);
+  return static_cast<int64_t>(result);
 }
 
 }  // namespace simple

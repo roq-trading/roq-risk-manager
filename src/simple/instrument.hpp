@@ -2,22 +2,27 @@
 
 #pragma once
 
+#include <limits>
+
 #include "roq/decimals.hpp"
 #include "roq/reference_data.hpp"
 
 namespace simple {
 
 struct Instrument final {
-  Instrument() = default;
+  Instrument(uint32_t id);
 
   Instrument(Instrument &&) = default;
   Instrument(Instrument const &) = delete;
 
-  void operator()(roq::ReferenceData const &);
+  uint32_t const id;
 
-  int64_t quantity_as_integer(double quantity) const;
+  bool operator()(roq::ReferenceData const &);
+
+  int64_t quantity_to_internal(double quantity) const;
 
  private:
+  double min_trade_vol_ = std::numeric_limits<double>::quiet_NaN();
   roq::Decimals quantity_decimals_;
 };
 

@@ -33,6 +33,7 @@ include(GNUInstallDirs)
 
 find_package(absl REQUIRED)
 find_package(fmt REQUIRED)
+find_package(roq-adapter REQUIRED)
 find_package(roq-api REQUIRED)
 find_package(roq-client REQUIRED)
 find_package(roq-flags REQUIRED)

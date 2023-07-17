@@ -3,23 +3,11 @@
   "type": "flags",
   "values": [
     {
-      "name": "accounts",
+      "name": "config_file",
       "type": "std::string",
+      "validator": "roq::flags::validators::Path",
       "required": true,
-      "default": "A1",
-      "description": "account (regex)"
-    },
-    {
-      "name": "exchange",
-      "type": "std::string",
-      "required": true,
-      "description": "exchange"
-    },
-    {
-      "name": "symbols",
-      "type": "std::string",
-      "required": true,
-      "description": "symbol"
+      "description": "config file (path)"
     }
   ]
 }

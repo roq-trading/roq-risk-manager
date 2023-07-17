@@ -6,10 +6,11 @@ set(SOURCES
     account.cpp
     application.cpp
     config.cpp
+    controller.cpp
     instrument.cpp
+    position.cpp
     settings.cpp
     shared.cpp
-    strategy.cpp
     main.cpp)
 
 add_executable(${TARGET_NAME} ${SOURCES})
@@ -20,6 +21,8 @@ target_link_libraries(
   ${TARGET_NAME}
   PRIVATE ${TARGET_NAME}-flags
           ${PROJECT_NAME}-tools
+          roq-adapter::roq-adapter
+          roq-adapter::roq-adapter-flags
           roq-client::roq-client
           roq-client::roq-client-flags
           roq-logging::roq-logging

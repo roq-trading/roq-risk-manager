@@ -7,7 +7,7 @@
 
 #include "roq/service.hpp"
 
-#include "simple/strategy.hpp"
+#include "simple/controller.hpp"
 
 namespace simple {
 
@@ -18,7 +18,7 @@ struct Application final : public roq::Service {
   int main(roq::args::Parser const &) override;
 
  private:
-  using value_type = Strategy;  // note!
+  using value_type = Controller;  // note!
 };
 
 }  // namespace simple

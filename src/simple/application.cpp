@@ -10,7 +10,6 @@
 #include "simple/settings.hpp"
 #include "simple/shared.hpp"
 
-using namespace std::chrono_literals;
 using namespace std::literals;
 
 namespace simple {
@@ -22,9 +21,9 @@ int Application::main(roq::args::Parser const &args) {
   if (std::empty(params))
     roq::log::fatal("Unexpected"sv);
   Settings settings{args};
-  Config config{settings};
-  Shared shared;
-  roq::client::Trader{settings, config, params}.dispatch<value_type>(shared);
+  settings.app.drop_copy = true;  // note!
+  auto config = Config::parse_file(settings.config_file);
+  roq::client::Trader{settings, config, params}.dispatch<value_type>(settings, config);
   return EXIT_SUCCESS;
 }
 

@@ -23,5 +23,5 @@ fi
 
 $PREFIX "./risk-manager-simple" \
   --name "$NAME" \
-  --drop_copy \
+  --config_file "config/$NAME.toml" \
   $@

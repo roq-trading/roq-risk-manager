@@ -4,15 +4,17 @@
 
 #include "roq/client.hpp"
 
+#include "simple/config.hpp"
+#include "simple/settings.hpp"
 #include "simple/shared.hpp"
 
 namespace simple {
 
-struct Strategy final : public roq::client::Handler {
-  explicit Strategy(roq::client::Dispatcher &, Shared &);
+struct Controller final : public roq::client::Handler {
+  Controller(roq::client::Dispatcher &, Settings const &, Config const &);
 
-  Strategy(Strategy &&) = default;
-  Strategy(Strategy const &) = delete;
+  Controller(Controller &&) = default;
+  Controller(Controller const &) = delete;
 
  protected:
   void operator()(roq::Event<roq::Timer> const &) override;
@@ -27,7 +29,7 @@ struct Strategy final : public roq::client::Handler {
 
  private:
   roq::client::Dispatcher &dispatcher_;
-  Shared &shared_;
+  Shared shared_;
 };
 
 }  // namespace simple
