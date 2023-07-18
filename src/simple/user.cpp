@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2023, Hans Erik Thrane */
 
-#include "simple/account.hpp"
+#include "simple/user.hpp"
 
 #include "roq/logging.hpp"
 
@@ -10,25 +10,25 @@ using namespace std::literals;
 
 namespace simple {
 
-Account::Account(std::string_view const &name, Shared &shared) : name{name}, shared_{shared} {
+User::User(std::string_view const &name, Shared &shared) : name{name}, shared_{shared} {
 }
 
-void Account::operator()(roq::ReferenceData const &reference_data) {
+void User::operator()(roq::ReferenceData const &reference_data) {
   auto callback = []([[maybe_unused]] auto instrument_id) {};
   dispatch(reference_data, callback);
 }
 
-void Account::operator()(roq::TradeUpdate const &trade_update) {
-  auto callback = [this](auto instrument_id) { shared_.publish_account(name, instrument_id); };
+void User::operator()(roq::TradeUpdate const &trade_update) {
+  auto callback = [this](auto instrument_id) { shared_.publish_user(name, instrument_id); };
   dispatch(trade_update, callback);
 }
 
 template <typename Callback>
-void Account::dispatch(auto &value, Callback callback) {
+void User::dispatch(auto &value, Callback callback) {
   auto &instrument = shared_.get_instrument(value.exchange, value.symbol);
   auto iter = positions_.find(instrument.id);
   if (iter == std::end(positions_)) {
-    auto limit = shared_.get_limit_by_account(name, value.exchange, value.symbol);
+    auto limit = shared_.get_limit_by_user(name, value.exchange, value.symbol);
     iter = positions_.try_emplace(instrument.id, limit).first;
   }
   auto &position = (*iter).second;

@@ -11,6 +11,7 @@ set(SOURCES
     position.cpp
     settings.cpp
     shared.cpp
+    user.cpp
     main.cpp)
 
 add_executable(${TARGET_NAME} ${SOURCES})

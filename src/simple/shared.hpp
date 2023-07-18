@@ -10,6 +10,7 @@
 #include "simple/config.hpp"
 #include "simple/instrument.hpp"
 #include "simple/limit.hpp"
+#include "simple/user.hpp"
 
 namespace simple {
 
@@ -17,6 +18,8 @@ struct Shared final {
   explicit Shared(Config const &);
 
   Instrument &get_instrument(std::string_view const &exchange, std::string_view const &symbol);
+
+  // accounts
 
   template <typename Callback>
   bool get_account(std::string_view const &account, Callback callback) {
@@ -34,16 +37,18 @@ struct Shared final {
       callback(account);
   }
 
-  Limit get_limit(
+  Limit get_limit_by_account(
       std::string_view const &account, std::string_view const &exchange, std::string_view const &symbol) const;
 
-  void publish(std::string_view const &account);
-  void publish(std::string_view const &account, uint32_t instrument_id) { publish_[account].emplace(instrument_id); }
+  void publish_account(std::string_view const &account);
+  void publish_account(std::string_view const &account, uint32_t instrument_id) {
+    publish_by_account_[account].emplace(instrument_id);
+  }
 
   template <typename Callback>
-  bool get_publish(std::string_view const &account, Callback callback) {
-    auto iter_1 = publish_.find(account);
-    if (iter_1 == std::end(publish_))
+  bool get_publish_by_account(std::string_view const &account, Callback callback) {
+    auto iter_1 = publish_by_account_.find(account);
+    if (iter_1 == std::end(publish_by_account_))
       return false;
     for (auto instrument_id : (*iter_1).second) {
       auto iter_2 = instruments_.find(instrument_id);
@@ -61,6 +66,53 @@ struct Shared final {
     return true;
   }
 
+  // users
+
+  template <typename Callback>
+  bool get_user(std::string_view const &user, Callback callback) {
+    auto iter = users_.find(user);
+    if (iter != std::end(users_)) {
+      callback((*iter).second);
+      return true;
+    }
+    return false;
+  }
+
+  template <typename Callback>
+  void get_all_users(Callback callback) {
+    for (auto &[_, user] : users_)
+      callback(user);
+  }
+
+  Limit get_limit_by_user(
+      std::string_view const &user, std::string_view const &exchange, std::string_view const &symbol) const;
+
+  void publish_user(std::string_view const &user);
+  void publish_user(std::string_view const &user, uint32_t instrument_id) {
+    publish_by_user_[user].emplace(instrument_id);
+  }
+
+  template <typename Callback>
+  bool get_publish_by_user(std::string_view const &user, Callback callback) {
+    auto iter_1 = publish_by_user_.find(user);
+    if (iter_1 == std::end(publish_by_user_))
+      return false;
+    for (auto instrument_id : (*iter_1).second) {
+      auto iter_2 = instruments_.find(instrument_id);
+      if (iter_2 == std::end(instruments_))
+        continue;  // XXX should never happen
+      auto &instrument = (*iter_2).second;
+      auto iter_3 = users_.find(user);
+      if (iter_3 == std::end(users_))
+        continue;  // XXX should never happen
+      auto callback_2 = [&](auto &position) { callback(position, instrument); };
+      auto &user = (*iter_3).second;
+      user.get_position(instrument_id, callback_2);
+    }
+    (*iter_1).second.clear();
+    return true;
+  }
+
  protected:
   uint32_t get_instrument_id(std::string_view const &exchange, std::string_view const &symbol);
 
@@ -69,9 +121,13 @@ struct Shared final {
   absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, int32_t>> instrument_lookup_;
   absl::flat_hash_map<uint32_t, Instrument> instruments_;
   absl::flat_hash_map<std::string, Account> accounts_;  // note! can't make const
+  absl::flat_hash_map<std::string, User> users_;        // note! can't make const
   absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, Limit>>> const
-      limits_;
-  absl::flat_hash_map<std::string, absl::flat_hash_set<uint32_t>> publish_;
+      limits_by_account_;
+  absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, Limit>>> const
+      limits_by_user_;
+  absl::flat_hash_map<std::string, absl::flat_hash_set<uint32_t>> publish_by_account_;
+  absl::flat_hash_map<std::string, absl::flat_hash_set<uint32_t>> publish_by_user_;
 };
 
 }  // namespace simple

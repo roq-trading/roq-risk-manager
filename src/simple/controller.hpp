@@ -32,6 +32,7 @@ struct Controller final : public roq::client::Handler {
   void operator()(roq::Event<roq::TradeUpdate> const &) override;
 
   void publish_accounts();
+  void publish_users();
 
  private:
   roq::client::Dispatcher &dispatcher_;
@@ -39,6 +40,7 @@ struct Controller final : public roq::client::Handler {
   absl::flat_hash_set<std::string> published_accounts_;
   std::vector<roq::RiskLimit> limits_;
   uint64_t last_seqno_ = {};
+  bool ready_ = {};
 };
 
 }  // namespace simple
