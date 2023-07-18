@@ -55,12 +55,12 @@ void Controller::operator()(roq::Event<roq::DownloadEnd> const &event) {
 // note! final download message allows us to publish
 void Controller::operator()(roq::Event<roq::GatewayStatus> const &event) {
   auto &[message_info, gateway_status] = event;
+  if (ready_)
+    return;
+  ready_ = true;
+  roq::log::warn("*** READY ***"sv);
   auto callback = [&](auto &user) { shared_.publish_user(user.name); };
   shared_.get_all_users(callback);
-  if (!ready_) {
-    ready_ = true;
-    roq::log::warn("*** READY ***"sv);
-  }
 }
 
 void Controller::operator()(roq::Event<roq::ReferenceData> const &event) {
