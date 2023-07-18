@@ -5,9 +5,12 @@ symbols = [
   "^ETH(_USD[A-Z]?)?-PERPETUAL$",      # swaps                                                                          
 ]
 
-[accounts.A1.deribit]
 [accounts.A1.deribit.BTC-PERPETUAL]
 long_limit = 10
 short_limit = 5
 [accounts.A1.deribit.ETH-PERPETUAL]
 long_limit = 2
+
+[users.trader.deribit.BTC-PERPETUAL]
+long_limit = 5
+short_limit = 2

@@ -17,30 +17,8 @@ Controller::Controller(roq::client::Dispatcher &dispatcher, Settings const &, Co
 }
 
 void Controller::operator()(roq::Event<roq::Timer> const &) {
-  auto callback = [&](auto &account) {
-    risk_limit_buffer_.clear();
-    auto callback = [&](auto &position, auto &instrument) {
-      auto risk_limit = roq::RiskLimit{
-          .exchange = instrument.exchange,
-          .symbol = instrument.symbol,
-          .buy_limit = position.buy_limit(),
-          .sell_limit = position.sell_limit(),
-      };
-      risk_limit_buffer_.emplace_back(std::move(risk_limit));
-    };
-    shared_.get_publish(account.name, callback);
-    if (!std::empty(risk_limit_buffer_)) {
-      auto risk_limits = roq::RiskLimits{
-          .label = "test"sv,  // XXX
-          .account = account.name,
-          .user = {},
-          .limits = risk_limit_buffer_,
-          .seqno = {},  // XXX
-      };
-      dispatcher_.send(risk_limits, 0);  // XXX
-    }
-  };
-  shared_.get_all_accounts(callback);
+  // note! timer is used to achieve batching of updates => gateway & clients can proxy until updates arrive
+  publish_accounts();
 }
 
 void Controller::operator()(roq::Event<roq::Connected> const &) {
@@ -48,6 +26,7 @@ void Controller::operator()(roq::Event<roq::Connected> const &) {
 
 void Controller::operator()(roq::Event<roq::Disconnected> const &) {
   published_accounts_.clear();
+  last_seqno_ = {};
 }
 
 void Controller::operator()(roq::Event<roq::DownloadBegin> const &event) {
@@ -62,6 +41,7 @@ void Controller::operator()(roq::Event<roq::DownloadEnd> const &event) {
   if (std::empty(download_end.account))
     return;
   roq::log::warn(R"(*** DOWNLOAD HAS COMPLETED *** (account="{}"))"sv, download_end.account);
+  last_seqno_ = message_info.source_seqno;
   auto res = published_accounts_.emplace(download_end.account);
   if (res.second)
     shared_.publish(download_end.account);
@@ -86,8 +66,38 @@ void Controller::operator()(roq::Event<roq::OrderUpdate> const &event) {
 void Controller::operator()(roq::Event<roq::TradeUpdate> const &event) {
   roq::log::info("event={}"sv, event);
   auto &[message_info, trade_update] = event;
+  last_seqno_ = message_info.source_seqno;
   auto callback = [&](auto &account) { account(trade_update); };
   shared_.get_account(trade_update.account, callback);
+}
+
+void Controller::publish_accounts() {
+  auto callback = [&](auto &account) {
+    limits_.clear();
+    auto callback = [&](auto &position, auto &instrument) {
+      auto risk_limit = roq::RiskLimit{
+          .exchange = instrument.exchange,
+          .symbol = instrument.symbol,
+          .long_quantity = position.long_quantity(),
+          .short_quantity = position.short_quantity(),
+          .buy_limit = position.buy_limit(),
+          .sell_limit = position.sell_limit(),
+      };
+      limits_.emplace_back(std::move(risk_limit));
+    };
+    shared_.get_publish(account.name, callback);
+    if (!std::empty(limits_)) {
+      auto risk_limits = roq::RiskLimits{
+          .label = "test"sv,  // XXX
+          .account = account.name,
+          .user = {},
+          .limits = limits_,
+          .seqno = last_seqno_,
+      };
+      dispatcher_.send(risk_limits, 0);  // XXX
+    }
+  };
+  shared_.get_all_accounts(callback);
 }
 
 }  // namespace simple

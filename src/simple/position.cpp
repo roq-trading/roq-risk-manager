@@ -4,6 +4,8 @@
 
 #include "roq/logging.hpp"
 
+#include "roq/utils/common.hpp"
+
 using namespace std::literals;
 
 namespace simple {
@@ -16,17 +18,23 @@ void Position::operator()(roq::ReferenceData const &, Instrument const &) {
 }
 
 void Position::operator()(roq::TradeUpdate const &trade_update, Instrument const &instrument) {
+  auto sign = roq::utils::sign(trade_update.side);
   for (auto &item : trade_update.fills) {
+    // note! avoid double-counting
     assert(!std::empty(item.external_trade_id));
     auto res = fills_.emplace(item.external_trade_id);
-    if (!res.second)  // note! don't double-count
+    if (!res.second)
       continue;
+    // note! this could be more complex, e.g. omnibus accounting
+    quantity_ += sign * item.quantity;
+    long_quantity_ = std::max(quantity_, 0.0);
+    short_quantity_ = std::max(-quantity_, 0.0);
+    // TEST
     auto quantity = instrument.quantity_to_internal(item.quantity);
     if (!quantity) [[unlikely]] {
       roq::log::warn("Probably something wrong... perhaps missing reference data?"sv);
     }
-    current_ += quantity;
-    test_ += item.quantity;
+    current_ += sign * quantity;
   }
 }
 

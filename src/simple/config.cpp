@@ -49,7 +49,31 @@ bool find_and_remove(auto &node, std::string_view const &key, Callback callback)
 }
 
 template <typename R>
-R parse_accounts(auto &node) {
+R parse_symbols(auto &node) {
+  using result_type = std::remove_cvref<R>::type;
+  result_type result;
+  auto parse_helper = [&](auto &node) {
+    using value_type = typename result_type::mapped_type::value_type;
+    if (node.is_value()) {
+      result[EXCHANGE].emplace(*node.template value<value_type>());
+    } else if (node.is_array()) {
+      auto &arr = *node.as_array();
+      for (auto &node_2 : arr) {
+        result[EXCHANGE].emplace(*node_2.template value<value_type>());
+      }
+    } else {
+      roq::log::fatal("Unexpected"sv);
+    }
+  };
+  if (find_and_remove(node, "symbols"sv, parse_helper)) {
+  } else {
+    roq::log::fatal(R"(Unexpected: did not find the "symbols" table)"sv);
+  }
+  return result;
+}
+
+template <typename R>
+R parse_limits(auto &node, auto const &name) {
   using result_type = std::remove_cvref<R>::type;
   result_type result;
   auto parse_helper = [&](auto &node) {
@@ -94,33 +118,9 @@ R parse_accounts(auto &node) {
       roq::log::fatal("Unexpected"sv);
     }
   };
-  if (find_and_remove(node, "accounts"sv, parse_helper)) {
+  if (find_and_remove(node, name, parse_helper)) {
   } else {
-    roq::log::fatal(R"(Unexpected: did not find the "accounts" table)"sv);
-  }
-  return result;
-}
-
-template <typename R>
-R parse_symbols(auto &node) {
-  using result_type = std::remove_cvref<R>::type;
-  result_type result;
-  auto parse_helper = [&](auto &node) {
-    using value_type = typename result_type::mapped_type::value_type;
-    if (node.is_value()) {
-      result[EXCHANGE].emplace(*node.template value<value_type>());
-    } else if (node.is_array()) {
-      auto &arr = *node.as_array();
-      for (auto &node_2 : arr) {
-        result[EXCHANGE].emplace(*node_2.template value<value_type>());
-      }
-    } else {
-      roq::log::fatal("Unexpected"sv);
-    }
-  };
-  if (find_and_remove(node, "symbols"sv, parse_helper)) {
-  } else {
-    roq::log::fatal(R"(Unexpected: did not find the "symbols" table)"sv);
+    roq::log::fatal(R"(Unexpected: did not find the "{}" table)"sv, name);
   }
   return result;
 }
@@ -139,7 +139,8 @@ Config Config::parse_text(std::string_view const &text) {
 }
 
 Config::Config(auto &node)
-    : accounts{parse_accounts<decltype(accounts)>(node)}, symbols{parse_symbols<decltype(symbols)>(node)} {
+    : symbols{parse_symbols<decltype(symbols)>(node)}, accounts{parse_limits<decltype(accounts)>(node, "accounts"sv)},
+      users{parse_limits<decltype(accounts)>(node, "users"sv)} {
   check_empty(node);
 }
 

@@ -21,9 +21,16 @@ struct Config final : public roq::client::Config {
   static Config parse_file(std::string_view const &);
   static Config parse_text(std::string_view const &);
 
+  // exchange => symbol
+  absl::flat_hash_map<std::string, absl::flat_hash_set<std::string>> const symbols;
+
+  // account => exchange => symbol => limit
   absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, Limit>>> const
       accounts;
-  absl::flat_hash_map<std::string, absl::flat_hash_set<std::string>> const symbols;
+
+  // user => exchange => symbol => limit
+  absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, Limit>>> const
+      users;
 
  protected:
   explicit Config(auto &node);
