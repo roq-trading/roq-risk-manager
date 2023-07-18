@@ -52,9 +52,7 @@ void Controller::operator()(roq::Event<roq::DownloadEnd> const &event) {
     shared_.publish_account(download_end.account);
 }
 
-// note! final download message allows us to publish
-void Controller::operator()(roq::Event<roq::GatewayStatus> const &event) {
-  auto &[message_info, gateway_status] = event;
+void Controller::operator()(roq::Event<roq::Ready> const &) {
   if (ready_)
     return;
   ready_ = true;

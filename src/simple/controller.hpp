@@ -26,7 +26,7 @@ struct Controller final : public roq::client::Handler {
   void operator()(roq::Event<roq::Disconnected> const &) override;
   void operator()(roq::Event<roq::DownloadBegin> const &) override;
   void operator()(roq::Event<roq::DownloadEnd> const &) override;
-  void operator()(roq::Event<roq::GatewayStatus> const &) override;
+  void operator()(roq::Event<roq::Ready> const &) override;
   void operator()(roq::Event<roq::ReferenceData> const &) override;
   void operator()(roq::Event<roq::OrderUpdate> const &) override;
   void operator()(roq::Event<roq::TradeUpdate> const &) override;
