@@ -21,6 +21,7 @@ requirements:
     - roq-client
     - roq-flags
     - roq-oss-benchmark
+    - roq-oss-tomlplusplus
 
 about:
   license: BSD-3-Clause
