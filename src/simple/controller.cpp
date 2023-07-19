@@ -29,6 +29,7 @@ void Controller::operator()(roq::Event<roq::Connected> const &) {
 
 void Controller::operator()(roq::Event<roq::Disconnected> const &) {
   published_accounts_.clear();
+  last_session_id_ = {};
   last_seqno_ = {};
   ready_ = {};
   roq::log::warn("*** NOT READY ***"sv);
@@ -46,6 +47,7 @@ void Controller::operator()(roq::Event<roq::DownloadEnd> const &event) {
   if (std::empty(download_end.account))
     return;
   roq::log::warn(R"(*** DOWNLOAD HAS COMPLETED *** (account="{}"))"sv, download_end.account);
+  last_session_id_ = message_info.source_session_id;
   last_seqno_ = message_info.source_seqno;
   auto res = published_accounts_.emplace(download_end.account);
   if (res.second)
@@ -61,8 +63,10 @@ void Controller::operator()(roq::Event<roq::Ready> const &) {
   shared_.get_all_users(callback);
 }
 
+// XXX TODO also use MarketByPrice in case reference data not available...?
 void Controller::operator()(roq::Event<roq::ReferenceData> const &event) {
   auto &[message_info, reference_data] = event;
+  roq::log::debug("reference_data={}"sv, reference_data);
   auto &instrument = shared_.get_instrument(reference_data.exchange, reference_data.symbol);
   if (instrument(reference_data)) {
     auto callback = [&](auto &item) { item(reference_data); };
@@ -78,6 +82,7 @@ void Controller::operator()(roq::Event<roq::OrderUpdate> const &event) {
 void Controller::operator()(roq::Event<roq::TradeUpdate> const &event) {
   roq::log::info("event={}"sv, event);
   auto &[message_info, trade_update] = event;
+  last_session_id_ = message_info.source_session_id;
   last_seqno_ = message_info.source_seqno;
   auto callback = [&](auto &item) { item(trade_update); };
   shared_.get_account(trade_update.account, callback);
@@ -105,6 +110,7 @@ void Controller::publish_accounts() {
           .account = account.name,
           .user = {},
           .limits = limits_,
+          .session_id = last_session_id_,
           .seqno = last_seqno_,
       };
       roq::log::debug("{}"sv, risk_limits);
@@ -135,6 +141,7 @@ void Controller::publish_users() {
           .account = {},
           .user = user.name,
           .limits = limits_,
+          .session_id = last_session_id_,
           .seqno = last_seqno_,
       };
       roq::log::debug("{}"sv, risk_limits);

@@ -39,6 +39,7 @@ struct Controller final : public roq::client::Handler {
   Shared shared_;
   absl::flat_hash_set<std::string> published_accounts_;
   std::vector<roq::RiskLimit> limits_;
+  roq::UUID last_session_id_ = {};
   uint64_t last_seqno_ = {};
   bool ready_ = {};
 };
