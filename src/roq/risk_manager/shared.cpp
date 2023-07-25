@@ -1,12 +1,13 @@
 /* Copyright (c) 2017-2023, Hans Erik Thrane */
 
-#include "simple/shared.hpp"
+#include "roq/risk_manager/shared.hpp"
 
 #include "roq/logging.hpp"
 
 using namespace std::literals;
 
-namespace simple {
+namespace roq {
+namespace risk_manager {
 
 // === HELPERS ===
 
@@ -109,4 +110,5 @@ void Shared::publish_user(std::string_view const &user) {
     tmp.emplace(instrument_id);
 }
 
-}  // namespace simple
+}  // namespace risk_manager
+}  // namespace roq

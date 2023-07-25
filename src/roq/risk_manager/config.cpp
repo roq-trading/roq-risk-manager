@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2023, Hans Erik Thrane */
 
-#include "simple/config.hpp"
+#include "roq/risk_manager/config.hpp"
 
 #include <toml++/toml.h>
 
@@ -8,7 +8,8 @@
 
 using namespace std::literals;
 
-namespace simple {
+namespace roq {
+namespace risk_manager {
 
 // === CONSTANTS ===
 
@@ -25,17 +26,17 @@ void check_empty(auto &node) {
   auto &table = *node.as_table();
   auto error = false;
   for (auto &[key, value] : table) {
-    roq::log::warn(R"(key="{}")"sv, static_cast<std::string_view>(key));
+    log::warn(R"(key="{}")"sv, static_cast<std::string_view>(key));
     error = true;
   }
   if (error)
-    roq::log::fatal("Unexpected"sv);
+    log::fatal("Unexpected"sv);
 }
 
 template <typename Callback>
 bool find_and_remove(auto &node, std::string_view const &key, Callback callback) {
   if (!node.is_table()) {
-    roq::log::warn("Unexpected: node is not a table"sv);
+    log::warn("Unexpected: node is not a table"sv);
     return false;
   }
   auto &table = *node.as_table();
@@ -62,12 +63,12 @@ R parse_symbols(auto &node) {
         result[EXCHANGE].emplace(*node_2.template value<value_type>());
       }
     } else {
-      roq::log::fatal("Unexpected"sv);
+      log::fatal("Unexpected"sv);
     }
   };
   if (find_and_remove(node, "symbols"sv, parse_helper)) {
   } else {
-    roq::log::fatal(R"(Unexpected: did not find the "symbols" table)"sv);
+    log::fatal(R"(Unexpected: did not find the "symbols" table)"sv);
   }
   return result;
 }
@@ -103,24 +104,24 @@ R parse_limits(auto &node, auto const &name) {
                   tmp_2.try_emplace(symbol, std::move(limit));
                   check_empty(value_3);
                 } else {
-                  roq::log::fatal("Unexpected"sv);
+                  log::fatal("Unexpected"sv);
                 }
               }
             } else {
-              roq::log::fatal("Unexpected"sv);
+              log::fatal("Unexpected"sv);
             }
           }
         } else {
-          roq::log::fatal("Unexpected"sv);
+          log::fatal("Unexpected"sv);
         }
       }
     } else {
-      roq::log::fatal("Unexpected"sv);
+      log::fatal("Unexpected"sv);
     }
   };
   if (find_and_remove(node, name, parse_helper)) {
   } else {
-    roq::log::fatal(R"(Unexpected: did not find the "{}" table)"sv, name);
+    log::fatal(R"(Unexpected: did not find the "{}" table)"sv, name);
   }
   return result;
 }
@@ -147,7 +148,7 @@ Config::Config(auto &node)
 void Config::dispatch(Handler &handler) const {
   // accounts
   for (auto &[name, _] : accounts) {
-    auto account = roq::client::Account{
+    auto account = client::Account{
         .regex = name,
     };
     handler(account);
@@ -155,7 +156,7 @@ void Config::dispatch(Handler &handler) const {
   // symbols
   for (auto &[exchange, symbols_2] : symbols)
     for (auto &item : symbols_2) {
-      auto symbol = roq::client::Symbol{
+      auto symbol = client::Symbol{
           .regex = item,
           .exchange = exchange,
       };
@@ -163,4 +164,5 @@ void Config::dispatch(Handler &handler) const {
     }
 }
 
-}  // namespace simple
+}  // namespace risk_manager
+}  // namespace roq

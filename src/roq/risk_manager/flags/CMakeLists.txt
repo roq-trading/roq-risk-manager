@@ -1,4 +1,4 @@
-set(TARGET_NAME ${PROJECT_NAME}-simple-flags)
+set(TARGET_NAME ${PROJECT_NAME}-flags)
 
 set(SOURCES flags.cpp)
 
@@ -10,7 +10,7 @@ roq_autogen(
   OUTPUT
   AUTOGEN_HEADERS
   NAMESPACE
-  "simple/flags"
+  "roq/risk_manager/flags"
   OUTPUT_TYPE
   "flags"
   FILE_TYPE
@@ -24,7 +24,7 @@ roq_autogen(
   OUTPUT
   AUTOGEN_SOURCES
   NAMESPACE
-  "simple/flags"
+  "roq/risk_manager/flags"
   OUTPUT_TYPE
   "flags"
   FILE_TYPE

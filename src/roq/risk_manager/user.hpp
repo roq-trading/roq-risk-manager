@@ -9,7 +9,8 @@
 
 #include "position.hpp"
 
-namespace simple {
+namespace roq {
+namespace risk_manager {
 
 struct Shared;  // note! circular dependency
 
@@ -21,8 +22,8 @@ struct User final {
 
   std::string const name;
 
-  void operator()(roq::ReferenceData const &);
-  void operator()(roq::TradeUpdate const &);
+  void operator()(ReferenceData const &);
+  void operator()(TradeUpdate const &);
 
   template <typename Callback>
   void get_position(uint32_t instrument_id, Callback callback) {
@@ -40,4 +41,5 @@ struct User final {
   absl::flat_hash_map<uint32_t, Position> positions_;
 };
 
-}  // namespace simple
+}  // namespace risk_manager
+}  // namespace roq

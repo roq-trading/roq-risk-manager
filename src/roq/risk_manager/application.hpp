@@ -7,18 +7,20 @@
 
 #include "roq/service.hpp"
 
-#include "simple/controller.hpp"
+#include "roq/risk_manager/controller.hpp"
 
-namespace simple {
+namespace roq {
+namespace risk_manager {
 
-struct Application final : public roq::Service {
+struct Application final : public Service {
   using Service::Service;  // inherit constructors
 
  protected:
-  int main(roq::args::Parser const &) override;
+  int main(args::Parser const &) override;
 
  private:
   using value_type = Controller;  // note!
 };
 
-}  // namespace simple
+}  // namespace risk_manager
+}  // namespace roq

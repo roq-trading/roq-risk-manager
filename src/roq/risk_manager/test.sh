@@ -21,7 +21,7 @@ fi
 
 # launch
 
-$PREFIX "./risk-manager-simple" \
+$PREFIX "./risk-manager" \
   --name "$NAME" \
   --config_file "config/$NAME.toml" \
   $@

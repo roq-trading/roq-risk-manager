@@ -1,24 +1,25 @@
 /* Copyright (c) 2017-2023, Hans Erik Thrane */
 
-#include "simple/account.hpp"
+#include "roq/risk_manager/account.hpp"
 
 #include "roq/logging.hpp"
 
-#include "simple/shared.hpp"
+#include "roq/risk_manager/shared.hpp"
 
 using namespace std::literals;
 
-namespace simple {
+namespace roq {
+namespace risk_manager {
 
 Account::Account(std::string_view const &name, Shared &shared) : name{name}, shared_{shared} {
 }
 
-void Account::operator()(roq::ReferenceData const &reference_data) {
+void Account::operator()(ReferenceData const &reference_data) {
   auto callback = []([[maybe_unused]] auto instrument_id) {};
   dispatch(reference_data, callback);
 }
 
-void Account::operator()(roq::TradeUpdate const &trade_update) {
+void Account::operator()(TradeUpdate const &trade_update) {
   auto callback = [this](auto instrument_id) { shared_.publish_account(name, instrument_id); };
   dispatch(trade_update, callback);
 }
@@ -34,6 +35,14 @@ void Account::dispatch(auto &value, Callback callback) {
   auto &position = (*iter).second;
   position(value, instrument);
   callback(instrument.id);
+  log::debug(
+      R"(account="{}, exchange="{}", symbol="{}", instrument={}, position={})"sv,
+      name,
+      value.exchange,
+      value.symbol,
+      instrument,
+      position);
 }
 
-}  // namespace simple
+}  // namespace risk_manager
+}  // namespace roq

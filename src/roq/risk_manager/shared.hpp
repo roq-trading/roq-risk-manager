@@ -6,13 +6,14 @@
 
 #include "roq/client.hpp"
 
-#include "simple/account.hpp"
-#include "simple/config.hpp"
-#include "simple/instrument.hpp"
-#include "simple/limit.hpp"
-#include "simple/user.hpp"
+#include "roq/risk_manager/account.hpp"
+#include "roq/risk_manager/config.hpp"
+#include "roq/risk_manager/instrument.hpp"
+#include "roq/risk_manager/limit.hpp"
+#include "roq/risk_manager/user.hpp"
 
-namespace simple {
+namespace roq {
+namespace risk_manager {
 
 struct Shared final {
   explicit Shared(Config const &);
@@ -130,4 +131,5 @@ struct Shared final {
   absl::flat_hash_map<std::string, absl::flat_hash_set<uint32_t>> publish_by_user_;
 };
 
-}  // namespace simple
+}  // namespace risk_manager
+}  // namespace roq

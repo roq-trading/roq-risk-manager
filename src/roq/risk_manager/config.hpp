@@ -13,11 +13,12 @@
 
 #include "roq/client/config.hpp"
 
-#include "simple/limit.hpp"
+#include "roq/risk_manager/limit.hpp"
 
-namespace simple {
+namespace roq {
+namespace risk_manager {
 
-struct Config final : public roq::client::Config {
+struct Config final : public client::Config {
   static Config parse_file(std::string_view const &);
   static Config parse_text(std::string_view const &);
 
@@ -38,4 +39,5 @@ struct Config final : public roq::client::Config {
   void dispatch(Handler &) const override;
 };
 
-}  // namespace simple
+}  // namespace risk_manager
+}  // namespace roq
