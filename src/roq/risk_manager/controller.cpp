@@ -114,7 +114,7 @@ void Controller::publish_accounts() {
           .session_id = last_session_id_,
           .seqno = last_seqno_,
       };
-      log::debug("{}"sv, risk_limits);
+      log::debug("risk_limits={}"sv, risk_limits);
       dispatcher_.send(risk_limits, 0);  // XXX
     }
   };
@@ -145,7 +145,7 @@ void Controller::publish_users() {
           .session_id = last_session_id_,
           .seqno = last_seqno_,
       };
-      log::debug("{}"sv, risk_limits);
+      log::debug("risk_limits={}"sv, risk_limits);
       dispatcher_.send(risk_limits, 0);  // XXX
     }
   };
