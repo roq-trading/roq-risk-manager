@@ -23,11 +23,14 @@ struct Position final {
   void operator()(roq::ReferenceData const &, Instrument const &);
   void operator()(roq::TradeUpdate const &, Instrument const &);
 
-  auto long_quantity() const { return long_quantity_; }
-  auto short_quantity() const { return short_quantity_; }
+  double long_quantity() const { return long_quantity_; }
+  double short_quantity() const { return short_quantity_; }
 
-  auto buy_limit() const { return long_limit_ - long_quantity_; }
-  auto sell_limit() const { return short_limit_ - short_quantity_; }
+  double buy_limit() const;
+  double sell_limit() const;
+
+ protected:
+  void DEBUG_print();
 
  private:
   double const long_limit_;

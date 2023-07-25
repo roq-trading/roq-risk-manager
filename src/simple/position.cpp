@@ -18,6 +18,7 @@ void Position::operator()(roq::ReferenceData const &, Instrument const &) {
 }
 
 void Position::operator()(roq::TradeUpdate const &trade_update, Instrument const &instrument) {
+  roq::log::debug("trade_update={}"sv, trade_update);
   auto sign = roq::utils::sign(trade_update.side);
   for (auto &item : trade_update.fills) {
     // note! avoid double-counting
@@ -36,6 +37,20 @@ void Position::operator()(roq::TradeUpdate const &trade_update, Instrument const
     }
     current_ += sign * quantity;
   }
+  DEBUG_print();
+}
+
+double Position::buy_limit() const {
+  return std::max(0.0, long_limit_ - long_quantity_);
+}
+
+double Position::sell_limit() const {
+  return std::max(0.0, short_limit_ - short_quantity_);
+}
+
+void Position::DEBUG_print() {
+  roq::log::debug("buy: quantity={}, limit={}"sv, long_quantity_, long_limit_);
+  roq::log::debug("sell: quantity={}, limit={}"sv, short_quantity_, short_limit_);
 }
 
 }  // namespace simple
