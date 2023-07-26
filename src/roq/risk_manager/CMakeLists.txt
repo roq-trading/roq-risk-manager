@@ -1,8 +1,9 @@
 set(TARGET_NAME ${PROJECT_NAME})
 
 add_subdirectory(database)
-add_subdirectory(risk)
 add_subdirectory(flags)
+add_subdirectory(rest)
+add_subdirectory(risk)
 
 set(SOURCES application.cpp config.cpp controller.cpp settings.cpp shared.cpp main.cpp)
 
@@ -14,6 +15,7 @@ target_link_libraries(
   ${TARGET_NAME}
   PRIVATE ${TARGET_NAME}-database
           ${TARGET_NAME}-flags
+          ${TARGET_NAME}-rest
           ${TARGET_NAME}-risk
           ${PROJECT_NAME}-third_party-sqlite
           roq-adapter::roq-adapter
