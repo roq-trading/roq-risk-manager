@@ -6,8 +6,6 @@
 
 #include "roq/logging.hpp"
 
-#include "tools/simple.hpp"
-
 using namespace std::literals;
 
 namespace roq {
