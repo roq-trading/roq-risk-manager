@@ -2,18 +2,16 @@
 
 #pragma once
 
+#include <memory>
+
+#include "roq/risk_manager/database/session.hpp"
+
 namespace roq {
 namespace risk_manager {
 namespace database {
 
-struct Session {
-  Session(Session &&) = default;
-  Session(Session const &) = delete;
-
-  virtual ~Session() = default;
-
- protected:
-  Session() = default;
+struct Factory final {
+  static std::unique_ptr<Session> create(std::string_view const &type, std::string_view const &params);
 };
 
 }  // namespace database

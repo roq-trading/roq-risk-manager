@@ -10,13 +10,16 @@
 #include "roq/risk_manager/config.hpp"
 #include "roq/risk_manager/instrument.hpp"
 #include "roq/risk_manager/limit.hpp"
+#include "roq/risk_manager/settings.hpp"
 #include "roq/risk_manager/user.hpp"
+
+#include "roq/risk_manager/database/session.hpp"
 
 namespace roq {
 namespace risk_manager {
 
 struct Shared final {
-  explicit Shared(Config const &);
+  Shared(Settings const &, Config const &);
 
   Instrument &get_instrument(std::string_view const &exchange, std::string_view const &symbol);
 
@@ -118,6 +121,7 @@ struct Shared final {
   uint32_t get_instrument_id(std::string_view const &exchange, std::string_view const &symbol);
 
  private:
+  std::unique_ptr<database::Session> database_;
   uint32_t next_instrument_id_ = {};
   absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, int32_t>> instrument_lookup_;
   absl::flat_hash_map<uint32_t, Instrument> instruments_;

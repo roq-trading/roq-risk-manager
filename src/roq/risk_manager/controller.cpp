@@ -11,8 +11,10 @@ using namespace std::literals;
 namespace roq {
 namespace risk_manager {
 
-Controller::Controller(client::Dispatcher &dispatcher, Settings const &, Config const &config)
-    : dispatcher_{dispatcher}, shared_{config} {
+// === IMPLEMENTATION ===
+
+Controller::Controller(client::Dispatcher &dispatcher, Settings const &settings, Config const &config)
+    : dispatcher_{dispatcher}, shared_{settings, config} {
 }
 
 // note! timer is used to achieve batching of updates => gateway & clients can proxy until updates arrive

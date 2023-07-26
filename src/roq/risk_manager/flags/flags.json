@@ -8,6 +8,20 @@
       "validator": "roq::flags::validators::Path",
       "required": true,
       "description": "config file (path)"
+    },
+    {
+      "name": "db_type",
+      "type": "std::string",
+      "required": true,
+      "default": "sqlite",
+      "description": "database type"
+    },
+    {
+      "name": "db_params",
+      "type": "std::string",
+      "required": true,
+      "default": "risk.sqlite3",
+      "description": "database parameters"
     }
   ]
 }
