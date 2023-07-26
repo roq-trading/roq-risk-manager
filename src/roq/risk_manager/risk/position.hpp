@@ -12,11 +12,12 @@
 #include "roq/reference_data.hpp"
 #include "roq/trade_update.hpp"
 
-#include "roq/risk_manager/instrument.hpp"
-#include "roq/risk_manager/limit.hpp"
+#include "roq/risk_manager/risk/instrument.hpp"
+#include "roq/risk_manager/risk/limit.hpp"
 
 namespace roq {
 namespace risk_manager {
+namespace risk {
 
 struct Position final {
   explicit Position(Limit const &);
@@ -65,17 +66,18 @@ struct Position final {
   int64_t current_ = {};  // XXX TODO issues min_trade_vol changing over time
 };
 
+}  // namespace risk
 }  // namespace risk_manager
 }  // namespace roq
 
 template <>
-struct fmt::formatter<roq::risk_manager::Position> {
+struct fmt::formatter<roq::risk_manager::risk::Position> {
   template <typename Context>
   constexpr auto parse(Context &context) {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(roq::risk_manager::Position const &value, Context &context) const {
+  auto format(roq::risk_manager::risk::Position const &value, Context &context) const {
     return value.format_to(context);
   }
 };

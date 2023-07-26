@@ -6,22 +6,23 @@
 
 #include "roq/client.hpp"
 
-#include "roq/risk_manager/account.hpp"
 #include "roq/risk_manager/config.hpp"
-#include "roq/risk_manager/instrument.hpp"
-#include "roq/risk_manager/limit.hpp"
 #include "roq/risk_manager/settings.hpp"
-#include "roq/risk_manager/user.hpp"
+
+#include "roq/risk_manager/risk/account.hpp"
+#include "roq/risk_manager/risk/instrument.hpp"
+#include "roq/risk_manager/risk/limit.hpp"
+#include "roq/risk_manager/risk/user.hpp"
 
 #include "roq/risk_manager/database/session.hpp"
 
 namespace roq {
 namespace risk_manager {
 
-struct Shared final {
+struct Shared final : public risk::Account::Handler, public risk::User::Handler {
   Shared(Settings const &, Config const &);
 
-  Instrument &get_instrument(std::string_view const &exchange, std::string_view const &symbol);
+  risk::Instrument &get_instrument(std::string_view const &exchange, std::string_view const &symbol) override;
 
   // accounts
 
@@ -41,11 +42,11 @@ struct Shared final {
       callback(account);
   }
 
-  Limit get_limit_by_account(
-      std::string_view const &account, std::string_view const &exchange, std::string_view const &symbol) const;
+  risk::Limit get_limit_by_account(
+      std::string_view const &account, std::string_view const &exchange, std::string_view const &symbol) const override;
 
   void publish_account(std::string_view const &account);
-  void publish_account(std::string_view const &account, uint32_t instrument_id) {
+  void publish_account(std::string_view const &account, uint32_t instrument_id) override {
     publish_by_account_[account].emplace(instrument_id);
   }
 
@@ -88,11 +89,11 @@ struct Shared final {
       callback(user);
   }
 
-  Limit get_limit_by_user(
-      std::string_view const &user, std::string_view const &exchange, std::string_view const &symbol) const;
+  risk::Limit get_limit_by_user(
+      std::string_view const &user, std::string_view const &exchange, std::string_view const &symbol) const override;
 
   void publish_user(std::string_view const &user);
-  void publish_user(std::string_view const &user, uint32_t instrument_id) {
+  void publish_user(std::string_view const &user, uint32_t instrument_id) override {
     publish_by_user_[user].emplace(instrument_id);
   }
 
@@ -124,13 +125,15 @@ struct Shared final {
   std::unique_ptr<database::Session> database_;
   uint32_t next_instrument_id_ = {};
   absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, int32_t>> instrument_lookup_;
-  absl::flat_hash_map<uint32_t, Instrument> instruments_;
-  absl::flat_hash_map<std::string, Account> accounts_;  // note! can't make const
-  absl::flat_hash_map<std::string, User> users_;        // note! can't make const
-  absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, Limit>>> const
-      limits_by_account_;
-  absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, Limit>>> const
-      limits_by_user_;
+  absl::flat_hash_map<uint32_t, risk::Instrument> instruments_;
+  absl::flat_hash_map<std::string, risk::Account> accounts_;  // note! can't make const
+  absl::flat_hash_map<std::string, risk::User> users_;        // note! can't make const
+  absl::flat_hash_map<
+      std::string,
+      absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, risk::Limit>>> const limits_by_account_;
+  absl::flat_hash_map<
+      std::string,
+      absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, risk::Limit>>> const limits_by_user_;
   absl::flat_hash_map<std::string, absl::flat_hash_set<uint32_t>> publish_by_account_;
   absl::flat_hash_map<std::string, absl::flat_hash_set<uint32_t>> publish_by_user_;
 };

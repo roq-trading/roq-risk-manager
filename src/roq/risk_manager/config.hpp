@@ -13,7 +13,7 @@
 
 #include "roq/client/config.hpp"
 
-#include "roq/risk_manager/limit.hpp"
+#include "roq/risk_manager/risk/limit.hpp"
 
 namespace roq {
 namespace risk_manager {
@@ -26,12 +26,14 @@ struct Config final : public client::Config {
   absl::flat_hash_map<std::string, absl::flat_hash_set<std::string>> const symbols;
 
   // account => exchange => symbol => limit
-  absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, Limit>>> const
-      accounts;
+  absl::flat_hash_map<
+      std::string,
+      absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, risk::Limit>>> const accounts;
 
   // user => exchange => symbol => limit
-  absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, Limit>>> const
-      users;
+  absl::flat_hash_map<
+      std::string,
+      absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, risk::Limit>>> const users;
 
  protected:
   explicit Config(auto &node);

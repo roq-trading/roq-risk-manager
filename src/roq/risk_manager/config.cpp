@@ -94,7 +94,7 @@ R parse_limits(auto &node, auto const &name) {
                 std::string symbol{key_3};
                 if (value_3.is_table()) {
                   auto &table_3 = *value_3.as_table();
-                  Limit limit;
+                  risk::Limit limit;
                   find_and_remove(table_3, "long_limit"sv, [&](auto &value) {
                     limit.long_limit = *value.template value<double>();
                   });

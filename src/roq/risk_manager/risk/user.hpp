@@ -7,18 +7,25 @@
 #include "roq/reference_data.hpp"
 #include "roq/trade_update.hpp"
 
-#include "position.hpp"
+#include "roq/risk_manager/risk/instrument.hpp"
+#include "roq/risk_manager/risk/position.hpp"
 
 namespace roq {
 namespace risk_manager {
+namespace risk {
 
-struct Shared;  // note! circular dependency
+struct User final {
+  struct Handler {
+    virtual void publish_user(std::string_view const &name, uint32_t instrument_id) = 0;
+    virtual Instrument &get_instrument(std::string_view const &exchange, std::string_view const &symbol) = 0;
+    virtual Limit get_limit_by_user(
+        std::string_view const &name, std::string_view const &exchange, std::string_view const &symbol) const = 0;
+  };
 
-struct Account final {
-  Account(std::string_view const &name, Shared &);
+  User(std::string_view const &name, Handler &);
 
-  Account(Account &&) = default;
-  Account(Account const &) = delete;
+  User(User &&) = default;
+  User(User const &) = delete;
 
   std::string const name;
 
@@ -37,9 +44,10 @@ struct Account final {
   void dispatch(auto &value, Callback);
 
  private:
-  Shared &shared_;
+  Handler &handler_;
   absl::flat_hash_map<uint32_t, Position> positions_;
 };
 
+}  // namespace risk
 }  // namespace risk_manager
 }  // namespace roq

@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2023, Hans Erik Thrane */
 
-#include "roq/risk_manager/position.hpp"
+#include "roq/risk_manager/risk/position.hpp"
 
 #include "roq/logging.hpp"
 
@@ -10,6 +10,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace risk_manager {
+namespace risk {
 
 Position::Position(Limit const &limit) : long_limit_{limit.long_limit}, short_limit_{limit.short_limit} {
 }
@@ -47,5 +48,6 @@ double Position::sell_limit() const {
   return std::max(0.0, short_limit_ - short_quantity_);
 }
 
+}  // namespace risk
 }  // namespace risk_manager
 }  // namespace roq

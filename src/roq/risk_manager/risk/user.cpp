@@ -1,17 +1,16 @@
 /* Copyright (c) 2017-2023, Hans Erik Thrane */
 
-#include "roq/risk_manager/user.hpp"
+#include "roq/risk_manager/risk/user.hpp"
 
 #include "roq/logging.hpp"
-
-#include "roq/risk_manager/shared.hpp"
 
 using namespace std::literals;
 
 namespace roq {
 namespace risk_manager {
+namespace risk {
 
-User::User(std::string_view const &name, Shared &shared) : name{name}, shared_{shared} {
+User::User(std::string_view const &name, Handler &handler) : name{name}, handler_{handler} {
 }
 
 void User::operator()(ReferenceData const &reference_data) {
@@ -20,16 +19,16 @@ void User::operator()(ReferenceData const &reference_data) {
 }
 
 void User::operator()(TradeUpdate const &trade_update) {
-  auto callback = [this](auto instrument_id) { shared_.publish_user(name, instrument_id); };
+  auto callback = [this](auto instrument_id) { handler_.publish_user(name, instrument_id); };
   dispatch(trade_update, callback);
 }
 
 template <typename Callback>
 void User::dispatch(auto &value, Callback callback) {
-  auto &instrument = shared_.get_instrument(value.exchange, value.symbol);
+  auto &instrument = handler_.get_instrument(value.exchange, value.symbol);
   auto iter = positions_.find(instrument.id);
   if (iter == std::end(positions_)) {
-    auto limit = shared_.get_limit_by_user(name, value.exchange, value.symbol);
+    auto limit = handler_.get_limit_by_user(name, value.exchange, value.symbol);
     iter = positions_.try_emplace(instrument.id, limit).first;
   }
   auto &position = (*iter).second;
@@ -44,5 +43,6 @@ void User::dispatch(auto &value, Callback callback) {
       position);
 }
 
+}  // namespace risk
 }  // namespace risk_manager
 }  // namespace roq

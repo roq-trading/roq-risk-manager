@@ -55,7 +55,7 @@ uint32_t Shared::get_instrument_id(std::string_view const &exchange, std::string
   return result;
 }
 
-Instrument &Shared::get_instrument(std::string_view const &exchange, std::string_view const &symbol) {
+risk::Instrument &Shared::get_instrument(std::string_view const &exchange, std::string_view const &symbol) {
   auto instrument_id = get_instrument_id(exchange, symbol);
   auto iter = instruments_.find(instrument_id);
   if (iter == std::end(instruments_))
@@ -66,7 +66,7 @@ Instrument &Shared::get_instrument(std::string_view const &exchange, std::string
 // account
 
 // note! lookup is rare -- no need to optimize
-Limit Shared::get_limit_by_account(
+risk::Limit Shared::get_limit_by_account(
     std::string_view const &account, std::string_view const &exchange, std::string_view const &symbol) const {
   auto iter_1 = limits_by_account_.find(account);
   if (iter_1 == std::end(limits_by_account_))
@@ -91,7 +91,7 @@ void Shared::publish_account(std::string_view const &account) {
 // user
 
 // note! lookup is rare -- no need to optimize
-Limit Shared::get_limit_by_user(
+risk::Limit Shared::get_limit_by_user(
     std::string_view const &user, std::string_view const &exchange, std::string_view const &symbol) const {
   auto iter_1 = limits_by_user_.find(user);
   if (iter_1 == std::end(limits_by_user_))

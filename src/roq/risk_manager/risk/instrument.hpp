@@ -11,6 +11,7 @@
 
 namespace roq {
 namespace risk_manager {
+namespace risk {
 
 struct Instrument final {
   Instrument(uint32_t id, std::string_view const &exchange, std::string_view const &symbol);
@@ -45,17 +46,18 @@ struct Instrument final {
   Decimals quantity_decimals_;
 };
 
+}  // namespace risk
 }  // namespace risk_manager
 }  // namespace roq
 
 template <>
-struct fmt::formatter<roq::risk_manager::Instrument> {
+struct fmt::formatter<roq::risk_manager::risk::Instrument> {
   template <typename Context>
   constexpr auto parse(Context &context) {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(roq::risk_manager::Instrument const &value, Context &context) const {
+  auto format(roq::risk_manager::risk::Instrument const &value, Context &context) const {
     return value.format_to(context);
   }
 };
