@@ -13,12 +13,17 @@ namespace risk_manager {
 
 // === IMPLEMENTATION ===
 
-Controller::Controller(client::Dispatcher &dispatcher, Settings const &settings, Config const &config)
-    : dispatcher_{dispatcher}, shared_{settings, config} {
+Controller::Controller(
+    client::Dispatcher &dispatcher, Settings const &settings, Config const &config, roq::io::Context &context)
+    : dispatcher_{dispatcher}, shared_{settings, config}, context_{context}, control_manager_{settings, context_} {
 }
 
+// client::Handler
+
 // note! timer is used to achieve batching of updates => gateway & clients can proxy until updates arrive
-void Controller::operator()(Event<Timer> const &) {
+void Controller::operator()(Event<Timer> const &event) {
+  context_.drain();
+  control_manager_(event);
   if (!ready_)  // note! wait until all accounts have been downloaded
     return;
   publish_accounts();

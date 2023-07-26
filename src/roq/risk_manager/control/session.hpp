@@ -10,10 +10,16 @@
 
 namespace roq {
 namespace risk_manager {
-namespace rest {
+namespace control {
 
 struct Session final : public roq::web::rest::Server::Handler {
-  struct Handler {};
+  struct Disconnected final {
+    uint64_t session_id = {};
+  };
+
+  struct Handler {
+    virtual void operator()(Disconnected const &) = 0;
+  };
 
   Session(Handler &, uint64_t session_id, roq::io::net::tcp::Connection::Factory &);
 
@@ -32,6 +38,6 @@ struct Session final : public roq::web::rest::Server::Handler {
   std::unique_ptr<roq::web::rest::Server> server_;
 };
 
-}  // namespace rest
+}  // namespace control
 }  // namespace risk_manager
 }  // namespace roq

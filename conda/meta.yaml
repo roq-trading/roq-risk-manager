@@ -20,8 +20,10 @@ requirements:
     - roq-adapter
     - roq-client
     - roq-flags
+    - roq-io
     - roq-oss-benchmark
     - roq-oss-tomlplusplus
+    - roq-web
     - sqlite
 
 about:

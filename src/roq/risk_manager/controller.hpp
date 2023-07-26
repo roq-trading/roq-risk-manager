@@ -8,20 +8,25 @@
 
 #include "roq/client.hpp"
 
+#include "roq/io/context.hpp"
+
 #include "roq/risk_manager/config.hpp"
 #include "roq/risk_manager/settings.hpp"
 #include "roq/risk_manager/shared.hpp"
+
+#include "roq/risk_manager/control/manager.hpp"
 
 namespace roq {
 namespace risk_manager {
 
 struct Controller final : public client::Handler {
-  Controller(client::Dispatcher &, Settings const &, Config const &);
+  Controller(client::Dispatcher &, Settings const &, Config const &, roq::io::Context &context);
 
   Controller(Controller &&) = default;
   Controller(Controller const &) = delete;
 
  protected:
+  // client::Handler
   void operator()(Event<Timer> const &) override;
   void operator()(Event<Connected> const &) override;
   void operator()(Event<Disconnected> const &) override;
@@ -43,6 +48,8 @@ struct Controller final : public client::Handler {
   UUID last_session_id_ = {};
   uint64_t last_seqno_ = {};
   bool ready_ = {};
+  io::Context &context_;
+  control::Manager control_manager_;
 };
 
 }  // namespace risk_manager

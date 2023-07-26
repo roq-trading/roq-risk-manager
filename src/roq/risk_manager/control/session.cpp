@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2023, Hans Erik Thrane */
 
-#include "roq/risk_manager/rest/session.hpp"
+#include "roq/risk_manager/control/session.hpp"
 
 #include "roq/web/rest/server_factory.hpp"
 
@@ -8,7 +8,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace risk_manager {
-namespace rest {
+namespace control {
 
 // === IMPLEMENTATION ===
 
@@ -23,6 +23,10 @@ void Session::close() {
 // web::rest::Server::Handler
 
 void Session::operator()(roq::web::rest::Server::Disconnected const &) {
+  auto disconnected = Disconnected{
+      .session_id = session_id_,
+  };
+  handler_(disconnected);
 }
 
 void Session::operator()(roq::web::rest::Server::Request const &) {
@@ -34,6 +38,6 @@ void Session::operator()(roq::web::rest::Server::Text const &) {
 void Session::operator()(roq::web::rest::Server::Binary const &) {
 }
 
-}  // namespace rest
+}  // namespace control
 }  // namespace risk_manager
 }  // namespace roq

@@ -6,6 +6,8 @@
 
 #include "roq/client.hpp"
 
+#include "roq/io/engine/context_factory.hpp"
+
 #include "roq/risk_manager/config.hpp"
 #include "roq/risk_manager/settings.hpp"
 #include "roq/risk_manager/shared.hpp"
@@ -24,7 +26,8 @@ int Application::main(args::Parser const &args) {
   Settings settings{args};
   settings.app.drop_copy = true;  // note!
   auto config = Config::parse_file(settings.config_file);
-  client::Trader{settings, config, params}.dispatch<value_type>(settings, config);
+  auto context = roq::io::engine::ContextFactory::create_libevent();
+  client::Bridge{settings, config, params}.dispatch<value_type>(settings, config, *context);
   return EXIT_SUCCESS;
 }
 

@@ -19,9 +19,14 @@ else
   PREFIX=
 fi
 
-# launch
+CACHE_DIR="$HOME/var/lib/roq/cache/risk-manager"
+
+mkdir -p "$CACHE_DIR"
 
 $PREFIX "./risk-manager" \
   --name "$NAME" \
   --config_file "config/$NAME.toml" \
+  --db_type "sqlite" \
+  --db_params "$CACHE_DIR/risk.sqlite3" \
+  --control_listen_address 1234 \
   $@
