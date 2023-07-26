@@ -26,6 +26,7 @@ Controller::Controller(
     : dispatcher_{dispatcher}, context_{context},
       database_{database::Factory::create(settings.db_type, settings.db_params)}, control_manager_{settings, context_},
       shared_{settings, config} {
+  load_trades();
 }
 
 // client::Handler
@@ -184,6 +185,24 @@ void Controller::publish_users() {
     }
   };
   shared_.get_all_users(callback);
+}
+
+void Controller::load_trades() {
+  using buffer_type = decltype(trades_buffer_);
+  struct Callback final : public database::Callback<database::Trade> {
+    explicit Callback(buffer_type &buffer) : buffer_{buffer} { buffer_.clear(); }
+
+   protected:
+    void operator()(value_type const &trade) override {
+      log::debug("trade={}"sv, trade);
+      buffer_.emplace_back(trade);
+    }
+    void finish() override { buffer_.clear(); }
+
+   private:
+    buffer_type &buffer_;
+  } callback{trades_buffer_};
+  (*database_)(callback);
 }
 
 }  // namespace risk_manager

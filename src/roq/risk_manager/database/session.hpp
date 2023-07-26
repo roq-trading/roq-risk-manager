@@ -2,6 +2,9 @@
 
 #pragma once
 
+#include <span>
+
+#include "roq/risk_manager/database/callback.hpp"
 #include "roq/risk_manager/database/trade.hpp"
 
 namespace roq {
@@ -13,6 +16,12 @@ struct Session {
   Session(Session const &) = delete;
 
   virtual ~Session() = default;
+
+  // get
+
+  virtual void operator()(Callback<Trade> &) = 0;
+
+  // put
 
   virtual void operator()(std::span<Trade const> const &) = 0;
 

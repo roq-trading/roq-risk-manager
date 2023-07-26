@@ -41,6 +41,8 @@ struct Controller final : public client::Handler {
   void publish_accounts();
   void publish_users();
 
+  void load_trades();
+
  private:
   client::Dispatcher &dispatcher_;
   io::Context &context_;

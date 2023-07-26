@@ -37,7 +37,7 @@ auto create_limits(auto &limits) {
 
 // === IMPLEMENTATION ===
 
-Shared::Shared(Settings const &settings, Config const &config)
+Shared::Shared(Settings const &, Config const &config)
     : accounts_{create_config<decltype(accounts_)>(config.accounts, *this)},
       users_{create_config<decltype(users_)>(config.users, *this)},
       limits_by_account_{create_limits<decltype(limits_by_account_)>(config.accounts)},

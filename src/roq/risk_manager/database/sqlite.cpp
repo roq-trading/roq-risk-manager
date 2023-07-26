@@ -66,6 +66,18 @@ void create_table_trades(auto &connection, auto &table_name) {
   create_index("user"sv);
 }
 
+auto create_table_trades_select_statement(auto &connection, auto &table_name) {
+  auto query = fmt::format(
+      "SELECT "
+      "account,exchange,symbol,side,quantity,price,create_time_utc,update_time_utc,user,external_account,"
+      "external_order_id,external_trade_id "
+      "FROM {} "
+      "ORDER BY account,exchange,symbol"sv,
+      table_name);
+  log::debug(R"(query="{}")"sv, query);
+  return third_party::sqlite::Statement{connection, query};
+}
+
 auto create_table_trades_insert_statement(auto &connection, auto &table_name, auto &trade) {
   auto query = fmt::format(
       "INSERT OR REPLACE "
@@ -93,6 +105,40 @@ auto create_table_trades_insert_statement(auto &connection, auto &table_name, au
 
 SQLite::SQLite(std::string_view const &params) : connection_{create_connection(params)} {
   create_table_trades(*connection_, TABLE_NAME_TRADES);
+}
+
+void SQLite::operator()(Callback<Trade> &callback) {
+  auto statement = create_table_trades_select_statement(*connection_, TABLE_NAME_TRADES);
+  while (statement.step()) {
+    auto account = statement.get<std::string>(0);
+    auto exchange = statement.get<std::string>(1);
+    auto symbol = statement.get<std::string>(2);
+    auto side = statement.get<std::string>(3);
+    auto quantity = statement.get<double>(4);
+    auto price = statement.get<double>(5);
+    auto create_time_utc = statement.get<int64_t>(6);
+    auto update_time_utc = statement.get<int64_t>(7);
+    auto user = statement.get<std::string>(8);
+    auto external_account = statement.get<std::string>(9);
+    auto external_order_id = statement.get<std::string>(10);
+    auto external_trade_id = statement.get<std::string>(11);
+    auto trade = Trade{
+        .account = account,
+        .exchange = exchange,
+        .symbol = symbol,
+        .side = magic_enum::enum_cast<Side>(side).value(),
+        .quantity = quantity,
+        .price = price,
+        .create_time_utc = std::chrono::nanoseconds{create_time_utc},
+        .update_time_utc = std::chrono::nanoseconds{update_time_utc},
+        .user = user,
+        .external_account = external_account,
+        .external_order_id = external_order_id,
+        .external_trade_id = external_trade_id,
+    };
+    callback(trade);
+  }
+  callback.finish();
 }
 
 void SQLite::operator()(std::span<Trade const> const &trades) {

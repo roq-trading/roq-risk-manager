@@ -16,6 +16,10 @@ struct SQLite final : public Session {
   explicit SQLite(std::string_view const &params);
 
  protected:
+  // get
+  void operator()(Callback<Trade> &) override;
+
+  // put
   void operator()(std::span<Trade const> const &) override;
 
  private:
