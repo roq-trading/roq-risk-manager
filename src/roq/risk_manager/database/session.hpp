@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "roq/risk_manager/database/trade.hpp"
+
 namespace roq {
 namespace risk_manager {
 namespace database {
@@ -11,6 +13,8 @@ struct Session {
   Session(Session const &) = delete;
 
   virtual ~Session() = default;
+
+  virtual void put(Trade const &) = 0;
 
  protected:
   Session() = default;

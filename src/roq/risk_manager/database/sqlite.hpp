@@ -15,6 +15,9 @@ namespace database {
 struct SQLite final : public Session {
   explicit SQLite(std::string_view const &params);
 
+ protected:
+  void put(Trade const &) override;
+
  private:
   std::unique_ptr<third_party::sqlite::Connection> connection_;
 };
