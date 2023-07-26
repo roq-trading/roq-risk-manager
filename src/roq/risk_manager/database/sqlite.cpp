@@ -4,6 +4,8 @@
 
 #include "roq/logging.hpp"
 
+#include "roq/third_party/sqlite/statement.hpp"
+
 using namespace std::literals;
 
 namespace roq {
@@ -23,7 +25,7 @@ auto create_connection(auto &params) {
   return std::make_unique<third_party::sqlite::Connection>(params);
 }
 
-void create_trades(auto &connection, auto &table_name) {
+void create_table_trades(auto &connection, auto &table_name) {
   log::info(R"(Creating table "{}")"sv, table_name);
   auto query = fmt::format(
       "CREATE TABLE IF NOT EXISTS {} ("
@@ -63,16 +65,41 @@ void create_trades(auto &connection, auto &table_name) {
   create_index("create_time_utc"sv, true);
   create_index("user"sv);
 }
+
+auto create_table_trades_insert_statement(auto &connection, auto &table_name, auto &trade) {
+  auto query = fmt::format(
+      "INSERT OR REPLACE "
+      "INTO {} "
+      "VALUES ('{}','{}','{}','{}',{},{},{},{},'{}','{}','{}','{}')"sv,
+      table_name,
+      trade.account,
+      trade.exchange,
+      trade.symbol,
+      trade.side,
+      trade.quantity,
+      trade.price,
+      trade.create_time_utc.count(),
+      trade.update_time_utc.count(),
+      trade.user,
+      trade.external_account,
+      trade.external_order_id,
+      trade.external_trade_id);
+  log::debug(R"(query="{}")"sv, query);
+  return third_party::sqlite::Statement{connection, query};
+}
 }  // namespace
 
 // === IMPLEMENTATION ===
 
 SQLite::SQLite(std::string_view const &params) : connection_{create_connection(params)} {
-  create_trades(*connection_, TABLE_NAME_TRADES);
+  create_table_trades(*connection_, TABLE_NAME_TRADES);
 }
 
-void SQLite::put(Trade const &) {
-  log::fatal("Not implemented"sv);
+void SQLite::operator()(std::span<Trade const> const &trades) {
+  for (auto &item : trades) {
+    auto statement = create_table_trades_insert_statement(*connection_, TABLE_NAME_TRADES, item);
+    statement.step();
+  }
 }
 
 }  // namespace database

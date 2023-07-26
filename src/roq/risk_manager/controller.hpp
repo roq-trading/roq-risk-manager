@@ -14,6 +14,8 @@
 #include "roq/risk_manager/settings.hpp"
 #include "roq/risk_manager/shared.hpp"
 
+#include "roq/risk_manager/database/session.hpp"
+
 #include "roq/risk_manager/control/manager.hpp"
 
 namespace roq {
@@ -34,7 +36,6 @@ struct Controller final : public client::Handler {
   void operator()(Event<DownloadEnd> const &) override;
   void operator()(Event<Ready> const &) override;
   void operator()(Event<ReferenceData> const &) override;
-  void operator()(Event<OrderUpdate> const &) override;
   void operator()(Event<TradeUpdate> const &) override;
 
   void publish_accounts();
@@ -42,14 +43,19 @@ struct Controller final : public client::Handler {
 
  private:
   client::Dispatcher &dispatcher_;
+  io::Context &context_;
+  std::unique_ptr<database::Session> database_;
+  control::Manager control_manager_;
   Shared shared_;
-  absl::flat_hash_set<std::string> published_accounts_;
-  std::vector<RiskLimit> limits_;
+  // state
   UUID last_session_id_ = {};
   uint64_t last_seqno_ = {};
   bool ready_ = {};
-  io::Context &context_;
-  control::Manager control_manager_;
+  // control
+  absl::flat_hash_set<std::string> latch_by_account_;
+  // buffering
+  std::vector<RiskLimit> risk_limits_buffer_;
+  std::vector<database::Trade> trades_buffer_;
 };
 
 }  // namespace risk_manager

@@ -4,8 +4,6 @@
 
 #include "roq/logging.hpp"
 
-#include "roq/risk_manager/database/factory.hpp"
-
 using namespace std::literals;
 
 namespace roq {
@@ -40,8 +38,7 @@ auto create_limits(auto &limits) {
 // === IMPLEMENTATION ===
 
 Shared::Shared(Settings const &settings, Config const &config)
-    : database_{database::Factory::create(settings.db_type, settings.db_params)},
-      accounts_{create_config<decltype(accounts_)>(config.accounts, *this)},
+    : accounts_{create_config<decltype(accounts_)>(config.accounts, *this)},
       users_{create_config<decltype(users_)>(config.users, *this)},
       limits_by_account_{create_limits<decltype(limits_by_account_)>(config.accounts)},
       limits_by_user_{create_limits<decltype(limits_by_user_)>(config.users)} {

@@ -6,16 +6,26 @@
 
 #include "roq/logging.hpp"
 
+#include "roq/risk_manager/database/factory.hpp"
+
 using namespace std::literals;
 
 namespace roq {
 namespace risk_manager {
 
+// === CONSTANTS ===
+
+namespace {
+auto const RISK_LIMITS_LABEL = "risk"sv;
+}
+
 // === IMPLEMENTATION ===
 
 Controller::Controller(
     client::Dispatcher &dispatcher, Settings const &settings, Config const &config, roq::io::Context &context)
-    : dispatcher_{dispatcher}, shared_{settings, config}, context_{context}, control_manager_{settings, context_} {
+    : dispatcher_{dispatcher}, context_{context},
+      database_{database::Factory::create(settings.db_type, settings.db_params)}, control_manager_{settings, context_},
+      shared_{settings, config} {
 }
 
 // client::Handler
@@ -24,7 +34,7 @@ Controller::Controller(
 void Controller::operator()(Event<Timer> const &event) {
   context_.drain();
   control_manager_(event);
-  if (!ready_)  // note! wait until all accounts have been downloaded
+  if (!ready_)  // note! wait for "ready" (all accounts have then been downloaded)
     return;
   publish_accounts();
   publish_users();
@@ -34,10 +44,10 @@ void Controller::operator()(Event<Connected> const &) {
 }
 
 void Controller::operator()(Event<Disconnected> const &) {
-  published_accounts_.clear();
   last_session_id_ = {};
   last_seqno_ = {};
   ready_ = {};
+  latch_by_account_.clear();
   log::warn("*** NOT READY ***"sv);
 }
 
@@ -55,7 +65,7 @@ void Controller::operator()(Event<DownloadEnd> const &event) {
   log::warn(R"(*** DOWNLOAD HAS COMPLETED *** (account="{}"))"sv, download_end.account);
   last_session_id_ = message_info.source_session_id;
   last_seqno_ = message_info.source_seqno;
-  auto res = published_accounts_.emplace(download_end.account);
+  auto res = latch_by_account_.emplace(download_end.account);
   if (res.second)
     shared_.publish_account(download_end.account);
 }
@@ -81,10 +91,6 @@ void Controller::operator()(Event<ReferenceData> const &event) {
   }
 }
 
-void Controller::operator()(Event<OrderUpdate> const &event) {
-  log::info("event={}"sv, event);
-}
-
 void Controller::operator()(Event<TradeUpdate> const &event) {
   log::info("event={}"sv, event);
   auto &[message_info, trade_update] = event;
@@ -93,11 +99,34 @@ void Controller::operator()(Event<TradeUpdate> const &event) {
   auto callback = [&](auto &item) { item(trade_update); };
   shared_.get_account(trade_update.account, callback);
   shared_.get_user(trade_update.user, callback);
+  try {
+    trades_buffer_.clear();
+    for (auto &item : trade_update.fills) {
+      auto trade = database::Trade{
+          .account = trade_update.account,
+          .exchange = trade_update.exchange,
+          .symbol = trade_update.symbol,
+          .side = trade_update.side,
+          .quantity = item.quantity,
+          .price = item.price,
+          .create_time_utc = trade_update.create_time_utc,
+          .update_time_utc = trade_update.update_time_utc,
+          .user = trade_update.user,
+          .external_account = trade_update.external_account,
+          .external_order_id = trade_update.external_order_id,
+          .external_trade_id = item.external_trade_id,
+      };
+      trades_buffer_.emplace_back(std::move(trade));
+    }
+    (*database_)(trades_buffer_);
+  } catch (...) {
+    // XXX TODO more specific
+  }
 }
 
 void Controller::publish_accounts() {
   auto callback = [&](auto &account) {
-    limits_.clear();
+    risk_limits_buffer_.clear();
     auto callback = [&](auto &position, auto &instrument) {
       auto risk_limit = RiskLimit{
           .exchange = instrument.exchange,
@@ -107,15 +136,15 @@ void Controller::publish_accounts() {
           .buy_limit = position.buy_limit(),
           .sell_limit = position.sell_limit(),
       };
-      limits_.emplace_back(std::move(risk_limit));
+      risk_limits_buffer_.emplace_back(std::move(risk_limit));
     };
     shared_.get_publish_by_account(account.name, callback);
-    if (!std::empty(limits_)) {
+    if (!std::empty(risk_limits_buffer_)) {
       auto risk_limits = RiskLimits{
-          .label = "test"sv,  // XXX
+          .label = RISK_LIMITS_LABEL,
           .account = account.name,
           .user = {},
-          .limits = limits_,
+          .limits = risk_limits_buffer_,
           .session_id = last_session_id_,
           .seqno = last_seqno_,
       };
@@ -128,7 +157,7 @@ void Controller::publish_accounts() {
 
 void Controller::publish_users() {
   auto callback = [&](auto &user) {
-    limits_.clear();
+    risk_limits_buffer_.clear();
     auto callback = [&](auto &position, auto &instrument) {
       auto risk_limit = RiskLimit{
           .exchange = instrument.exchange,
@@ -138,15 +167,15 @@ void Controller::publish_users() {
           .buy_limit = position.buy_limit(),
           .sell_limit = position.sell_limit(),
       };
-      limits_.emplace_back(std::move(risk_limit));
+      risk_limits_buffer_.emplace_back(std::move(risk_limit));
     };
     shared_.get_publish_by_user(user.name, callback);
-    if (!std::empty(limits_)) {
+    if (!std::empty(risk_limits_buffer_)) {
       auto risk_limits = RiskLimits{
-          .label = "test"sv,  // XXX
+          .label = RISK_LIMITS_LABEL,
           .account = {},
           .user = user.name,
-          .limits = limits_,
+          .limits = risk_limits_buffer_,
           .session_id = last_session_id_,
           .seqno = last_seqno_,
       };

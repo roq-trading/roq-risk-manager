@@ -14,7 +14,7 @@ struct Session {
 
   virtual ~Session() = default;
 
-  virtual void put(Trade const &) = 0;
+  virtual void operator()(std::span<Trade const> const &) = 0;
 
  protected:
   Session() = default;

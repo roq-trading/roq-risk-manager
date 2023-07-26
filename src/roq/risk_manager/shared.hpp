@@ -14,8 +14,6 @@
 #include "roq/risk_manager/risk/limit.hpp"
 #include "roq/risk_manager/risk/user.hpp"
 
-#include "roq/risk_manager/database/session.hpp"
-
 namespace roq {
 namespace risk_manager {
 
@@ -128,7 +126,6 @@ struct Shared final : public risk::Account::Handler, public risk::User::Handler 
   }
 
  private:
-  std::unique_ptr<database::Session> database_;
   uint32_t next_instrument_id_ = {};
   absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, int32_t>> instrument_lookup_;
   absl::flat_hash_map<uint32_t, risk::Instrument> instruments_;
