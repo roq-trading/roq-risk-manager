@@ -22,9 +22,10 @@ requirements:
     - roq-flags
     - roq-oss-benchmark
     - roq-oss-tomlplusplus
+    - sqlite
 
 about:
   license: BSD-3-Clause
   license_family: BSD
   license_file: LICENSE
-  summary: Strategy (a template project)
+  summary: Roq's Risk Manager (a template project)

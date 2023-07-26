@@ -21,7 +21,7 @@ add_dependencies(${TARGET_NAME} ${TARGET_NAME}-flags-autogen-headers)
 target_link_libraries(
   ${TARGET_NAME}
   PRIVATE ${TARGET_NAME}-flags
-          ${PROJECT_NAME}-tools
+          ${PROJECT_NAME}-third_party-sqlite
           roq-adapter::roq-adapter
           roq-adapter::roq-adapter-flags
           roq-client::roq-client

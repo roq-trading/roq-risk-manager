@@ -45,9 +45,12 @@ else()
   set(RT_LIBRARIES)
 endif()
 
+find_package(PkgConfig REQUIRED)                                                                                        
 find_package(Catch2 REQUIRED)
 
 find_program(CLANG_FORMAT clang-format REQUIRED)
+
+pkg_check_modules(SQLITE3 REQUIRED sqlite3)
 
 # include
 
