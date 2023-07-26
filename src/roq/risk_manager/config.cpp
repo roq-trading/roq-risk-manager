@@ -143,6 +143,7 @@ Config::Config(auto &node)
     : symbols{parse_symbols<decltype(symbols)>(node)}, accounts{parse_limits<decltype(accounts)>(node, "accounts"sv)},
       users{parse_limits<decltype(accounts)>(node, "users"sv)} {
   check_empty(node);
+  log::debug("config={}"sv, *this);
 }
 
 void Config::dispatch(Handler &handler) const {

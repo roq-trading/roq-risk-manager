@@ -35,6 +35,21 @@ struct Config final : public client::Config {
       std::string,
       absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, risk::Limit>>> const users;
 
+  template <typename Context>
+  auto format_to(Context &context) const {
+    using namespace fmt::literals;
+    using namespace std::literals;
+    // XXX TODO formatting of nested maps
+    return fmt::format_to(
+        context.out(),
+        R"({{)"
+        R"(symbols=[], )"
+        R"(accounts=[], )"
+        R"(users=[])"
+        R"(}})"_cf);
+    // fmt::join(symbols, ", "sv));
+  }
+
  protected:
   explicit Config(auto &node);
 
@@ -43,3 +58,15 @@ struct Config final : public client::Config {
 
 }  // namespace risk_manager
 }  // namespace roq
+
+template <>
+struct fmt::formatter<roq::risk_manager::Config> {
+  template <typename Context>
+  constexpr auto parse(Context &context) {
+    return std::begin(context);
+  }
+  template <typename Context>
+  auto format(roq::risk_manager::Config const &value, Context &context) const {
+    return value.format_to(context);
+  }
+};
