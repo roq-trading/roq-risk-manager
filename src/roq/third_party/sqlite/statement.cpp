@@ -13,6 +13,7 @@
 using namespace std::literals;
 
 namespace roq {
+namespace third_party {
 namespace sqlite {
 
 // === HELPERS ===
@@ -163,4 +164,5 @@ std::string Statement::get(size_t column) {
 }
 
 }  // namespace sqlite
+}  // namespace third_party
 }  // namespace roq

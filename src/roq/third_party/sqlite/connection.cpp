@@ -16,6 +16,7 @@ using namespace std::literals;
 using namespace fmt::literals;
 
 namespace roq {
+namespace third_party {
 namespace sqlite {
 
 // === HELPERS ===
@@ -73,4 +74,5 @@ void Connection::drop_table(std::string_view const &name) {
 }
 
 }  // namespace sqlite
+}  // namespace third_party
 }  // namespace roq

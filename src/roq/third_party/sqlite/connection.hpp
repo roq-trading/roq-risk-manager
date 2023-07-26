@@ -8,6 +8,7 @@
 #include <string_view>
 
 namespace roq {
+namespace third_party {
 namespace sqlite {
 
 struct Connection final {
@@ -31,4 +32,5 @@ struct Connection final {
 };
 
 }  // namespace sqlite
+}  // namespace third_party
 }  // namespace roq

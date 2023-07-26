@@ -10,6 +10,7 @@
 #include "roq/third_party/sqlite/connection.hpp"
 
 namespace roq {
+namespace third_party {
 namespace sqlite {
 
 struct Statement final {
@@ -43,4 +44,5 @@ struct Statement final {
 };
 
 }  // namespace sqlite
+}  // namespace third_party
 }  // namespace roq

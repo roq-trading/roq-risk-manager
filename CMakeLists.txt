@@ -45,7 +45,7 @@ else()
   set(RT_LIBRARIES)
 endif()
 
-find_package(PkgConfig REQUIRED)                                                                                        
+find_package(PkgConfig REQUIRED)
 find_package(Catch2 REQUIRED)
 
 find_program(CLANG_FORMAT clang-format REQUIRED)

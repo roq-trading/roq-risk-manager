@@ -1,5 +1,6 @@
 set(TARGET_NAME ${PROJECT_NAME})
 
+add_subdirectory(database)
 add_subdirectory(flags)
 
 set(SOURCES
@@ -21,6 +22,7 @@ add_dependencies(${TARGET_NAME} ${TARGET_NAME}-flags-autogen-headers)
 target_link_libraries(
   ${TARGET_NAME}
   PRIVATE ${TARGET_NAME}-flags
+          ${TARGET_NAME}-database
           ${PROJECT_NAME}-third_party-sqlite
           roq-adapter::roq-adapter
           roq-adapter::roq-adapter-flags
