@@ -42,13 +42,7 @@ struct Shared final : public risk::Account::Handler, public risk::User::Handler 
       callback(account);
   }
 
-  risk::Limit get_limit_by_account(
-      std::string_view const &account, std::string_view const &exchange, std::string_view const &symbol) const override;
-
   void publish_account(std::string_view const &account);
-  void publish_account(std::string_view const &account, uint32_t instrument_id) override {
-    publish_by_account_[account].emplace(instrument_id);
-  }
 
   template <typename Callback>
   bool get_publish_by_account(std::string_view const &account, Callback callback) {
@@ -89,13 +83,7 @@ struct Shared final : public risk::Account::Handler, public risk::User::Handler 
       callback(user);
   }
 
-  risk::Limit get_limit_by_user(
-      std::string_view const &user, std::string_view const &exchange, std::string_view const &symbol) const override;
-
   void publish_user(std::string_view const &user);
-  void publish_user(std::string_view const &user, uint32_t instrument_id) override {
-    publish_by_user_[user].emplace(instrument_id);
-  }
 
   template <typename Callback>
   bool get_publish_by_user(std::string_view const &user, Callback callback) {
@@ -120,6 +108,24 @@ struct Shared final : public risk::Account::Handler, public risk::User::Handler 
 
  protected:
   uint32_t get_instrument_id(std::string_view const &exchange, std::string_view const &symbol);
+
+  // accounts
+
+  risk::Limit get_limit_by_account(
+      std::string_view const &account, std::string_view const &exchange, std::string_view const &symbol) const override;
+
+  void publish_account(std::string_view const &account, uint32_t instrument_id) override {
+    publish_by_account_[account].emplace(instrument_id);
+  }
+
+  // users
+
+  risk::Limit get_limit_by_user(
+      std::string_view const &user, std::string_view const &exchange, std::string_view const &symbol) const override;
+
+  void publish_user(std::string_view const &user, uint32_t instrument_id) override {
+    publish_by_user_[user].emplace(instrument_id);
+  }
 
  private:
   std::unique_ptr<database::Session> database_;

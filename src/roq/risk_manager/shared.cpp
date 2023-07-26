@@ -63,7 +63,7 @@ risk::Instrument &Shared::get_instrument(std::string_view const &exchange, std::
   return (*iter).second;
 }
 
-// account
+// accounts
 
 // note! lookup is rare -- no need to optimize
 risk::Limit Shared::get_limit_by_account(
@@ -88,7 +88,7 @@ void Shared::publish_account(std::string_view const &account) {
     tmp.emplace(instrument_id);
 }
 
-// user
+// users
 
 // note! lookup is rare -- no need to optimize
 risk::Limit Shared::get_limit_by_user(
