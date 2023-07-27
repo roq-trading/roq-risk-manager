@@ -27,6 +27,7 @@ Controller::Controller(
       database_{database::Factory::create(settings.db_type, settings.db_params)}, control_manager_{settings, context_},
       shared_{settings, config} {
   load_trades();
+  load_positions();
 }
 
 // client::Handler
@@ -104,6 +105,7 @@ void Controller::operator()(Event<TradeUpdate> const &event) {
     trades_buffer_.clear();
     for (auto &item : trade_update.fills) {
       auto trade = database::Trade{
+          .user = trade_update.user,
           .account = trade_update.account,
           .exchange = trade_update.exchange,
           .symbol = trade_update.symbol,
@@ -112,7 +114,6 @@ void Controller::operator()(Event<TradeUpdate> const &event) {
           .price = item.price,
           .create_time_utc = trade_update.create_time_utc,
           .update_time_utc = trade_update.update_time_utc,
-          .user = trade_update.user,
           .external_account = trade_update.external_account,
           .external_order_id = trade_update.external_order_id,
           .external_trade_id = item.external_trade_id,
@@ -202,6 +203,16 @@ void Controller::load_trades() {
    private:
     buffer_type &buffer_;
   } callback{trades_buffer_};
+  (*database_)(callback);
+}
+
+void Controller::load_positions() {
+  struct Callback final : public database::Callback<database::Position> {
+   protected:
+    void operator()(value_type const &position) override { log::debug("position={}"sv, position); }
+    void finish() override {}
+
+  } callback;
   (*database_)(callback);
 }
 

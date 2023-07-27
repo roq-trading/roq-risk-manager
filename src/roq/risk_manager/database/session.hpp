@@ -5,6 +5,7 @@
 #include <span>
 
 #include "roq/risk_manager/database/callback.hpp"
+#include "roq/risk_manager/database/position.hpp"
 #include "roq/risk_manager/database/trade.hpp"
 
 namespace roq {
@@ -19,7 +20,8 @@ struct Session {
 
   // get
 
-  virtual void operator()(Callback<Trade> &) = 0;
+  virtual void operator()(Callback<Trade> &) = 0;     // details
+  virtual void operator()(Callback<Position> &) = 0;  // aggregate
 
   // put
 

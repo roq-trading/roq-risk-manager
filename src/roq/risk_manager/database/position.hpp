@@ -14,19 +14,14 @@ namespace roq {
 namespace risk_manager {
 namespace database {
 
-struct Trade final {
+struct Position final {
   std::string_view user;
   std::string_view account;
   std::string_view exchange;
   std::string_view symbol;
   Side side = {};
   double quantity = NaN;
-  double price = NaN;
-  std::chrono::nanoseconds create_time_utc = {};
   std::chrono::nanoseconds update_time_utc = {};
-  std::string_view external_account;
-  std::string_view external_order_id;
-  std::string_view external_trade_id;
 };
 
 }  // namespace database
@@ -34,13 +29,13 @@ struct Trade final {
 }  // namespace roq
 
 template <>
-struct fmt::formatter<roq::risk_manager::database::Trade> {
+struct fmt::formatter<roq::risk_manager::database::Position> {
   template <typename Context>
   constexpr auto parse(Context &context) {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(roq::risk_manager::database::Trade const &value, Context &context) const {
+  auto format(roq::risk_manager::database::Position const &value, Context &context) const {
     using namespace fmt::literals;
     return fmt::format_to(
         context.out(),
@@ -51,12 +46,7 @@ struct fmt::formatter<roq::risk_manager::database::Trade> {
         R"(symbol="{}", )"
         R"(side={}, )"
         R"(quantity={}, )"
-        R"(price={}, )"
-        R"(create_time_utc={}, )"
-        R"(update_time_utc={}, )"
-        R"(external_account="{}", )"
-        R"(external_order_id="{}", )"
-        R"(external_trade_id="{}")"
+        R"(update_time_utc={})"
         R"(}})"_cf,
         value.user,
         value.account,
@@ -64,11 +54,6 @@ struct fmt::formatter<roq::risk_manager::database::Trade> {
         value.symbol,
         value.side,
         value.quantity,
-        value.price,
-        value.create_time_utc,
-        value.update_time_utc,
-        value.external_account,
-        value.external_order_id,
-        value.external_trade_id);
+        value.update_time_utc);
   }
 };

@@ -18,6 +18,7 @@ struct SQLite final : public Session {
  protected:
   // get
   void operator()(Callback<Trade> &) override;
+  void operator()(Callback<Position> &) override;
 
   // put
   void operator()(std::span<Trade const> const &) override;

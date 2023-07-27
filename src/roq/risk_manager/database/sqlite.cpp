@@ -29,19 +29,25 @@ void create_table_trades(auto &connection, auto &table_name) {
   log::info(R"(Creating table "{}")"sv, table_name);
   auto query = fmt::format(
       "CREATE TABLE IF NOT EXISTS {} ("
-      "account TEXT NOT NULL, "
-      "exchange TEXT NOT NULL, "
-      "symbol TEXT NOT NULL, "
-      "side TEXT NOT NULL, "
-      "quantity REAL NOT NULL, "
-      "price REAL NOT NULL, "
-      "create_time_utc INTEGER NOT NULL, "
-      "update_time_utc INTEGER NOT NULL, "
-      "user TEXT, "
-      "external_account TEXT, "
-      "external_order_id TEXT, "
-      "external_trade_id TEXT NOT NULL, "
-      "PRIMARY KEY (account, exchange, symbol, update_time_utc, external_trade_id)"
+      "  user TEXT, "
+      "  account TEXT NOT NULL, "
+      "  exchange TEXT NOT NULL, "
+      "  symbol TEXT NOT NULL, "
+      "  side TEXT NOT NULL, "
+      "  quantity REAL NOT NULL, "
+      "  price REAL NOT NULL, "
+      "  create_time_utc INTEGER NOT NULL, "
+      "  update_time_utc INTEGER NOT NULL, "
+      "  external_account TEXT, "
+      "  external_order_id TEXT, "
+      "  external_trade_id TEXT NOT NULL, "
+      "  PRIMARY KEY ("
+      "    account, "
+      "    exchange, "
+      "    symbol, "
+      "    update_time_utc, "
+      "    external_trade_id"
+      "  )"
       ")"sv,
       table_name);
   connection.exec(query);
@@ -59,20 +65,35 @@ void create_table_trades(auto &connection, auto &table_name) {
     fmt::format_to(std::back_inserter(query), ")"sv);
     connection.exec(query);
   };
+  create_index("user"sv);
   create_index("account"sv);
   create_index("exchange"sv);
   create_index("symbol"sv);
+  create_index("side"sv);
   create_index("create_time_utc"sv, true);
-  create_index("user"sv);
 }
 
 auto create_table_trades_select_statement(auto &connection, auto &table_name) {
   auto query = fmt::format(
       "SELECT "
-      "account,exchange,symbol,side,quantity,price,create_time_utc,update_time_utc,user,external_account,"
-      "external_order_id,external_trade_id "
+      "  user, "
+      "  account, "
+      "  exchange, "
+      "  symbol, "
+      "  side, "
+      "  quantity, "
+      "  price, "
+      "  create_time_utc, "
+      "  update_time_utc, "
+      "  external_account,"
+      "  external_order_id, "
+      "  external_trade_id "
       "FROM {} "
-      "ORDER BY account,exchange,symbol"sv,
+      "ORDER BY "
+      "  user, "
+      "  account, "
+      "  exchange, "
+      "  symbol"sv,
       table_name);
   log::debug(R"(query="{}")"sv, query);
   return third_party::sqlite::Statement{connection, query};
@@ -82,8 +103,9 @@ auto create_table_trades_insert_statement(auto &connection, auto &table_name, au
   auto query = fmt::format(
       "INSERT OR REPLACE "
       "INTO {} "
-      "VALUES ('{}','{}','{}','{}',{},{},{},{},'{}','{}','{}','{}')"sv,
+      "VALUES ('{}','{}','{}','{}','{}',{},{},{},{},'{}','{}','{}')"sv,
       table_name,
+      trade.user,
       trade.account,
       trade.exchange,
       trade.symbol,
@@ -92,10 +114,47 @@ auto create_table_trades_insert_statement(auto &connection, auto &table_name, au
       trade.price,
       trade.create_time_utc.count(),
       trade.update_time_utc.count(),
-      trade.user,
       trade.external_account,
       trade.external_order_id,
       trade.external_trade_id);
+  log::debug(R"(query="{}")"sv, query);
+  return third_party::sqlite::Statement{connection, query};
+}
+
+auto create_positions_select_statement(auto &connection, auto &table_name) {
+  auto query = fmt::format(
+      "SELECT "
+      "  '' AS user, "
+      "  account, "
+      "  exchange, "
+      "  symbol, "
+      "  side, "
+      "  sum(quantity), "
+      "  max(update_time_utc) "
+      "FROM {} "
+      "GROUP BY "
+      "  account, "
+      "  exchange, "
+      "  symbol, "
+      "  side "
+      "UNION "
+      "SELECT "
+      "  user, "
+      "  '' AS account, "
+      "  exchange, "
+      "  symbol, "
+      "  side, "
+      "  sum(quantity), "
+      "  max(update_time_utc) "
+      "FROM {} "
+      "GROUP BY "
+      "  user, "
+      "  exchange, "
+      "  symbol, "
+      "  side"
+      ""sv,
+      table_name,
+      table_name);
   log::debug(R"(query="{}")"sv, query);
   return third_party::sqlite::Statement{connection, query};
 }
@@ -110,19 +169,20 @@ SQLite::SQLite(std::string_view const &params) : connection_{create_connection(p
 void SQLite::operator()(Callback<Trade> &callback) {
   auto statement = create_table_trades_select_statement(*connection_, TABLE_NAME_TRADES);
   while (statement.step()) {
-    auto account = statement.get<std::string>(0);
-    auto exchange = statement.get<std::string>(1);
-    auto symbol = statement.get<std::string>(2);
-    auto side = statement.get<std::string>(3);
-    auto quantity = statement.get<double>(4);
-    auto price = statement.get<double>(5);
-    auto create_time_utc = statement.get<int64_t>(6);
-    auto update_time_utc = statement.get<int64_t>(7);
-    auto user = statement.get<std::string>(8);
+    auto user = statement.get<std::string>(0);
+    auto account = statement.get<std::string>(1);
+    auto exchange = statement.get<std::string>(2);
+    auto symbol = statement.get<std::string>(3);
+    auto side = statement.get<std::string>(4);
+    auto quantity = statement.get<double>(5);
+    auto price = statement.get<double>(6);
+    auto create_time_utc = statement.get<int64_t>(7);
+    auto update_time_utc = statement.get<int64_t>(8);
     auto external_account = statement.get<std::string>(9);
     auto external_order_id = statement.get<std::string>(10);
     auto external_trade_id = statement.get<std::string>(11);
     auto trade = Trade{
+        .user = user,
         .account = account,
         .exchange = exchange,
         .symbol = symbol,
@@ -131,12 +191,35 @@ void SQLite::operator()(Callback<Trade> &callback) {
         .price = price,
         .create_time_utc = std::chrono::nanoseconds{create_time_utc},
         .update_time_utc = std::chrono::nanoseconds{update_time_utc},
-        .user = user,
         .external_account = external_account,
         .external_order_id = external_order_id,
         .external_trade_id = external_trade_id,
     };
     callback(trade);
+  }
+  callback.finish();
+}
+
+void SQLite::operator()(Callback<Position> &callback) {
+  auto statement = create_positions_select_statement(*connection_, TABLE_NAME_TRADES);
+  while (statement.step()) {
+    auto user = statement.get<std::string>(0);
+    auto account = statement.get<std::string>(1);
+    auto exchange = statement.get<std::string>(2);
+    auto symbol = statement.get<std::string>(3);
+    auto side = statement.get<std::string>(4);
+    auto quantity = statement.get<double>(5);
+    auto update_time_utc = statement.get<int64_t>(6);
+    auto position = Position{
+        .user = user,
+        .account = account,
+        .exchange = exchange,
+        .symbol = symbol,
+        .side = magic_enum::enum_cast<Side>(side).value(),
+        .quantity = quantity,
+        .update_time_utc = std::chrono::nanoseconds{update_time_utc},
+    };
+    callback(position);
   }
   callback.finish();
 }
