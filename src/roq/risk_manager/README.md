@@ -1,11 +1,19 @@
 Notes
 
+* Control
+
+  * Add corrections
+  * Allocate trades
+  * Initiate compaction
+  * Reload risk-limits
+
 * Database
 
   * Compact
   * Corrections
   * Remove expired symbols
   * One more example (in addition to SQLite)
+  * Risk limits (move on from "static" TOML configuration)
 
 * Positions
 
