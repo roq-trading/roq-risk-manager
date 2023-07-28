@@ -1,17 +1,11 @@
-notes & issues
-
-tick size can change any time (especially for long history) => makes it complex to convert double into integer
-
-not clear boundary for having downloaded all accounts => needed to manage limits per user
-
-currently only supporting a single source
-
+Notes
 
 * Database
 
   * Compact
   * Corrections
   * Remove expired symbols
+  * One more example (in addition to SQLite)
 
 * Positions
 
@@ -23,3 +17,15 @@ currently only supporting a single source
   * By account
   * By user
   * By "strategy" (NEW)
+
+* External
+
+  * Compute limits using external Python script (optional)
+
+* Gateways
+
+  * Simultaneous support for many gateways
+
+* Wish-list
+
+  * P&L calculations
