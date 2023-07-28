@@ -3,8 +3,8 @@
 #pragma once
 
 #include <span>
+#include <utility>
 
-#include "roq/risk_manager/database/callback.hpp"
 #include "roq/risk_manager/database/position.hpp"
 #include "roq/risk_manager/database/trade.hpp"
 
@@ -20,8 +20,8 @@ struct Session {
 
   // get
 
-  virtual void operator()(Callback<Trade> &) = 0;     // details
-  virtual void operator()(Callback<Position> &) = 0;  // aggregate
+  virtual void operator()(std::function<void(Trade const &)> const &) = 0;     // details
+  virtual void operator()(std::function<void(Position const &)> const &) = 0;  // aggregate
 
   // put
 

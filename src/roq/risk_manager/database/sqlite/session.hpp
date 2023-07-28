@@ -18,8 +18,8 @@ struct Session final : public database::Session {
 
  protected:
   // get
-  void operator()(Callback<Trade> &) override;
-  void operator()(Callback<Position> &) override;
+  void operator()(std::function<void(Trade const &)> const &) override;
+  void operator()(std::function<void(Position const &)> const &) override;
 
   // put
   void operator()(std::span<Trade const> const &) override;

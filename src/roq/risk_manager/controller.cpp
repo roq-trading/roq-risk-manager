@@ -93,6 +93,11 @@ void Controller::operator()(Event<ReferenceData> const &event) {
   }
 }
 
+// note!
+// we are currently persisting trade updates synchronously
+// this should not be an issue for low volume throughput
+// however, for high volume throughput one might consider buffering and postpone
+// persisting until the timer event fires
 void Controller::operator()(Event<TradeUpdate> const &event) {
   log::info("event={}"sv, event);
   auto &[message_info, trade_update] = event;
@@ -125,6 +130,8 @@ void Controller::operator()(Event<TradeUpdate> const &event) {
     // XXX TODO more specific
   }
 }
+
+// utilities
 
 void Controller::publish_accounts() {
   auto callback = [&](auto &account) {
@@ -189,30 +196,16 @@ void Controller::publish_users() {
 }
 
 void Controller::load_trades() {
-  using buffer_type = decltype(trades_buffer_);
-  struct Callback final : public database::Callback<database::Trade> {
-    explicit Callback(buffer_type &buffer) : buffer_{buffer} { buffer_.clear(); }
-
-   protected:
-    void operator()(value_type const &trade) override {
-      log::debug("trade={}"sv, trade);
-      buffer_.emplace_back(trade);
-    }
-    void finish() override { buffer_.clear(); }
-
-   private:
-    buffer_type &buffer_;
-  } callback{trades_buffer_};
+  trades_buffer_.clear();
+  auto callback = [&buffer = trades_buffer_](database::Trade const &trade) {
+    log::debug("trade={}"sv, trade);
+    buffer.emplace_back(trade);
+  };
   (*database_)(callback);
 }
 
 void Controller::load_positions() {
-  struct Callback final : public database::Callback<database::Position> {
-   protected:
-    void operator()(value_type const &position) override { log::debug("position={}"sv, position); }
-    void finish() override {}
-
-  } callback;
+  auto callback = [&](database::Position const &position) { log::debug("position={}"sv, position); };
   (*database_)(callback);
 }
 

@@ -167,7 +167,7 @@ Session::Session(std::string_view const &params) : connection_{create_connection
   create_table_trades(*connection_, TABLE_NAME_TRADES);
 }
 
-void Session::operator()(Callback<Trade> &callback) {
+void Session::operator()(std::function<void(Trade const &)> const &callback) {
   auto statement = create_table_trades_select_statement(*connection_, TABLE_NAME_TRADES);
   while (statement.step()) {
     auto user = statement.get<std::string>(0);
@@ -198,10 +198,9 @@ void Session::operator()(Callback<Trade> &callback) {
     };
     callback(trade);
   }
-  callback.finish();
 }
 
-void Session::operator()(Callback<Position> &callback) {
+void Session::operator()(std::function<void(Position const &)> const &callback) {
   auto statement = create_positions_select_statement(*connection_, TABLE_NAME_TRADES);
   while (statement.step()) {
     auto user = statement.get<std::string>(0);
@@ -222,7 +221,6 @@ void Session::operator()(Callback<Position> &callback) {
     };
     callback(position);
   }
-  callback.finish();
 }
 
 void Session::operator()(std::span<Trade const> const &trades) {
