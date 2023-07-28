@@ -13,6 +13,11 @@ namespace risk {
 Account::Account(std::string_view const &name, Handler &handler) : name{name}, handler_{handler} {
 }
 
+void Account::operator()(database::Position const &position) {
+  auto callback = []([[maybe_unused]] auto instrument_id) {};
+  dispatch(position, callback);
+}
+
 void Account::operator()(ReferenceData const &reference_data) {
   auto callback = []([[maybe_unused]] auto instrument_id) {};
   dispatch(reference_data, callback);

@@ -12,6 +12,8 @@
 #include "roq/reference_data.hpp"
 #include "roq/trade_update.hpp"
 
+#include "roq/risk_manager/database/position.hpp"
+
 #include "roq/risk_manager/risk/instrument.hpp"
 #include "roq/risk_manager/risk/limit.hpp"
 
@@ -24,6 +26,8 @@ struct Position final {
 
   Position(Position &&) = default;
   Position(Position const &) = delete;
+
+  void operator()(database::Position const &, Instrument const &);
 
   void operator()(ReferenceData const &, Instrument const &);
   void operator()(TradeUpdate const &, Instrument const &);

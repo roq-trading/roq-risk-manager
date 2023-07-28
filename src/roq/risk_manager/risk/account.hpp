@@ -7,6 +7,8 @@
 #include "roq/reference_data.hpp"
 #include "roq/trade_update.hpp"
 
+#include "roq/risk_manager/database/position.hpp"
+
 #include "roq/risk_manager/risk/instrument.hpp"
 #include "roq/risk_manager/risk/position.hpp"
 
@@ -28,6 +30,8 @@ struct Account final {
   Account(Account const &) = delete;
 
   std::string const name;
+
+  void operator()(database::Position const &);
 
   void operator()(ReferenceData const &);
   void operator()(TradeUpdate const &);

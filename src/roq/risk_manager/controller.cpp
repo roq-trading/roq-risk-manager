@@ -205,8 +205,15 @@ void Controller::load_trades() {
 }
 
 void Controller::load_positions() {
-  auto callback = [&](database::Position const &position) { log::debug("position={}"sv, position); };
-  (*database_)(callback);
+  auto dispatch = [&shared = shared_](database::Position const &position) {
+    auto callback = [&](auto &item) { item(position); };
+    log::debug("position={}"sv, position);
+    if (!std::empty(position.account))
+      shared.get_account(position.account, callback);
+    if (!std::empty(position.user))
+      shared.get_user(position.user, callback);
+  };
+  (*database_)(dispatch);
 }
 
 }  // namespace risk_manager

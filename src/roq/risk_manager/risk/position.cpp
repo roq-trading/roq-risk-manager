@@ -15,6 +15,21 @@ namespace risk {
 Position::Position(Limit const &limit) : long_limit_{limit.long_limit}, short_limit_{limit.short_limit} {
 }
 
+void Position::operator()(database::Position const &position, Instrument const &) {
+  switch (position.side) {
+    using enum Side;
+    case UNDEFINED:
+      assert(false);
+      break;
+    case BUY:
+      long_quantity_ = position.quantity;
+      break;
+    case SELL:
+      short_quantity_ = position.quantity;
+      break;
+  }
+}
+
 void Position::operator()(ReferenceData const &, Instrument const &) {
   // XXX TODO we must re-scale when reference data changes
 }
