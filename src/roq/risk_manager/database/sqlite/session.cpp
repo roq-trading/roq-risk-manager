@@ -38,7 +38,6 @@ void create_table_trades(auto &connection, auto &table_name) {
       "  quantity REAL NOT NULL, "
       "  price REAL NOT NULL, "
       "  create_time_utc INTEGER NOT NULL, "
-      "  update_time_utc INTEGER NOT NULL, "
       "  external_account TEXT, "
       "  external_order_id TEXT, "
       "  external_trade_id TEXT NOT NULL, "
@@ -46,7 +45,7 @@ void create_table_trades(auto &connection, auto &table_name) {
       "    account, "
       "    exchange, "
       "    symbol, "
-      "    update_time_utc, "
+      "    create_time_utc, "
       "    external_trade_id"
       "  )"
       ")"sv,
@@ -74,37 +73,11 @@ void create_table_trades(auto &connection, auto &table_name) {
   create_index("create_time_utc"sv, true);
 }
 
-auto create_table_trades_select_statement(auto &connection, auto &table_name) {
-  auto query = fmt::format(
-      "SELECT "
-      "  user, "
-      "  account, "
-      "  exchange, "
-      "  symbol, "
-      "  side, "
-      "  quantity, "
-      "  price, "
-      "  create_time_utc, "
-      "  update_time_utc, "
-      "  external_account,"
-      "  external_order_id, "
-      "  external_trade_id "
-      "FROM {} "
-      "ORDER BY "
-      "  user, "
-      "  account, "
-      "  exchange, "
-      "  symbol"sv,
-      table_name);
-  log::debug(R"(query="{}")"sv, query);
-  return third_party::sqlite::Statement{connection, query};
-}
-
 auto create_table_trades_insert_statement(auto &connection, auto &table_name, auto &trade) {
   auto query = fmt::format(
       "INSERT OR REPLACE "
       "INTO {} "
-      "VALUES ('{}','{}','{}','{}','{}',{},{},{},{},'{}','{}','{}')"sv,
+      "VALUES ('{}','{}','{}','{}','{}',{},{},{},'{}','{}','{}')"sv,
       table_name,
       trade.user,
       trade.account,
@@ -114,49 +87,113 @@ auto create_table_trades_insert_statement(auto &connection, auto &table_name, au
       trade.quantity,
       trade.price,
       trade.create_time_utc.count(),
-      trade.update_time_utc.count(),
       trade.external_account,
       trade.external_order_id,
       trade.external_trade_id);
-  log::debug(R"(query="{}")"sv, query);
+  // log::debug(R"(query="{}")"sv, query);
   return third_party::sqlite::Statement{connection, query};
 }
 
-auto create_positions_select_statement(auto &connection, auto &table_name) {
+auto create_positions_by_user_statement(auto &connection, auto &table_name) {
+  auto query = fmt::format(
+      "SELECT "
+      "  t1.user, "
+      "  '' AS account, "
+      "  t1.exchange, "
+      "  t1.symbol, "
+      "  SUM(COALESCE(t1.quantity, 0)) AS long_quantity, "
+      "  SUM(COALESCE(t2.quantity, 0)) AS short_quantity, "
+      "  MAX("
+      "    COALESCE(t1.create_time_utc, 0), "
+      "    COALESCE(t2.create_time_utc, 0) "
+      "  ) AS create_time_utc "
+      "FROM ( "
+      "  SELECT "
+      "    user,"
+      "    exchange,"
+      "    symbol,"
+      "    SUM(quantity) AS quantity, "
+      "    MAX(create_time_utc) AS create_time_utc "
+      "  FROM {} "
+      "  WHERE side='BUY' "
+      "  GROUP BY "
+      "    user,"
+      "    exchange,"
+      "    symbol "
+      ") t1 "
+      "FULL OUTER JOIN ( "
+      "  SELECT "
+      "    user,"
+      "    exchange,"
+      "    symbol,"
+      "    SUM(quantity) AS quantity, "
+      "    MAX(create_time_utc) AS create_time_utc "
+      "  FROM {} "
+      "  WHERE "
+      "    side='SELL'  "
+      "  GROUP BY "
+      "    user,"
+      "    exchange,"
+      "    symbol"
+      ") t2 "
+      "ON "
+      "  t1.user=t2.user AND "
+      "  t1.exchange=t2.exchange AND "
+      "  t1.symbol=t2.symbol"sv,
+      table_name,
+      table_name);
+  // log::debug(R"(query="{}")"sv, query);
+  return third_party::sqlite::Statement{connection, query};
+}
+auto create_positions_by_account_statement(auto &connection, auto &table_name) {
   auto query = fmt::format(
       "SELECT "
       "  '' AS user, "
-      "  account, "
-      "  exchange, "
-      "  symbol, "
-      "  side, "
-      "  sum(quantity), "
-      "  max(update_time_utc) "
-      "FROM {} "
-      "GROUP BY "
-      "  account, "
-      "  exchange, "
-      "  symbol, "
-      "  side "
-      "UNION "
-      "SELECT "
-      "  user, "
-      "  '' AS account, "
-      "  exchange, "
-      "  symbol, "
-      "  side, "
-      "  sum(quantity), "
-      "  max(update_time_utc) "
-      "FROM {} "
-      "GROUP BY "
-      "  user, "
-      "  exchange, "
-      "  symbol, "
-      "  side"
-      ""sv,
+      "  t1.account, "
+      "  t1.exchange, "
+      "  t1.symbol, "
+      "  SUM(COALESCE(t1.quantity, 0)) AS long_quantity, "
+      "  SUM(COALESCE(t2.quantity, 0)) AS short_quantity, "
+      "  MAX("
+      "    COALESCE(t1.create_time_utc, 0), "
+      "    COALESCE(t2.create_time_utc, 0) "
+      "  ) AS create_time_utc "
+      "FROM ( "
+      "  SELECT "
+      "    account,"
+      "    exchange,"
+      "    symbol,"
+      "    SUM(quantity) AS quantity, "
+      "    MAX(create_time_utc) AS create_time_utc "
+      "  FROM {} "
+      "  WHERE side='BUY' "
+      "  GROUP BY "
+      "    account,"
+      "    exchange,"
+      "    symbol "
+      ") t1 "
+      "FULL OUTER JOIN ( "
+      "  SELECT "
+      "    account,"
+      "    exchange,"
+      "    symbol,"
+      "    SUM(quantity) AS quantity, "
+      "    MAX(create_time_utc) AS create_time_utc "
+      "  FROM {} "
+      "  WHERE "
+      "    side='SELL'  "
+      "  GROUP BY "
+      "    account,"
+      "    exchange,"
+      "    symbol"
+      ") t2 "
+      "ON "
+      "  t1.account=t2.account AND "
+      "  t1.exchange=t2.exchange AND "
+      "  t1.symbol=t2.symbol"sv,
       table_name,
       table_name);
-  log::debug(R"(query="{}")"sv, query);
+  // log::debug(R"(query="{}")"sv, query);
   return third_party::sqlite::Statement{connection, query};
 }
 }  // namespace
@@ -167,60 +204,30 @@ Session::Session(std::string_view const &params) : connection_{create_connection
   create_table_trades(*connection_, TABLE_NAME_TRADES);
 }
 
-void Session::operator()(std::function<void(Trade const &)> const &callback) {
-  auto statement = create_table_trades_select_statement(*connection_, TABLE_NAME_TRADES);
-  while (statement.step()) {
-    auto user = statement.get<std::string>(0);
-    auto account = statement.get<std::string>(1);
-    auto exchange = statement.get<std::string>(2);
-    auto symbol = statement.get<std::string>(3);
-    auto side = statement.get<std::string>(4);
-    auto quantity = statement.get<double>(5);
-    auto price = statement.get<double>(6);
-    auto create_time_utc = statement.get<int64_t>(7);
-    auto update_time_utc = statement.get<int64_t>(8);
-    auto external_account = statement.get<std::string>(9);
-    auto external_order_id = statement.get<std::string>(10);
-    auto external_trade_id = statement.get<std::string>(11);
-    auto trade = Trade{
-        .user = user,
-        .account = account,
-        .exchange = exchange,
-        .symbol = symbol,
-        .side = magic_enum::enum_cast<Side>(side).value(),
-        .quantity = quantity,
-        .price = price,
-        .create_time_utc = std::chrono::nanoseconds{create_time_utc},
-        .update_time_utc = std::chrono::nanoseconds{update_time_utc},
-        .external_account = external_account,
-        .external_order_id = external_order_id,
-        .external_trade_id = external_trade_id,
-    };
-    callback(trade);
-  }
-}
-
 void Session::operator()(std::function<void(Position const &)> const &callback) {
-  auto statement = create_positions_select_statement(*connection_, TABLE_NAME_TRADES);
-  while (statement.step()) {
-    auto user = statement.get<std::string>(0);
-    auto account = statement.get<std::string>(1);
-    auto exchange = statement.get<std::string>(2);
-    auto symbol = statement.get<std::string>(3);
-    auto side = statement.get<std::string>(4);
-    auto quantity = statement.get<double>(5);
-    auto update_time_utc = statement.get<int64_t>(6);
-    auto position = Position{
-        .user = user,
-        .account = account,
-        .exchange = exchange,
-        .symbol = symbol,
-        .side = magic_enum::enum_cast<Side>(side).value(),
-        .quantity = quantity,
-        .update_time_utc = std::chrono::nanoseconds{update_time_utc},
-    };
-    callback(position);
-  }
+  auto dispatch = [&](auto &&statement) {
+    while (statement.step()) {
+      auto user = statement.template get<std::string>(0);
+      auto account = statement.template get<std::string>(1);
+      auto exchange = statement.template get<std::string>(2);
+      auto symbol = statement.template get<std::string>(3);
+      auto long_quantity = statement.template get<double>(4);
+      auto short_quantity = statement.template get<double>(5);
+      auto create_time_utc = statement.template get<int64_t>(6);
+      auto position = Position{
+          .user = user,
+          .account = account,
+          .exchange = exchange,
+          .symbol = symbol,
+          .long_quantity = long_quantity,
+          .short_quantity = short_quantity,
+          .create_time_utc = std::chrono::nanoseconds{create_time_utc},
+      };
+      callback(position);
+    }
+  };
+  dispatch(create_positions_by_user_statement(*connection_, TABLE_NAME_TRADES));
+  dispatch(create_positions_by_account_statement(*connection_, TABLE_NAME_TRADES));
 }
 
 void Session::operator()(std::span<Trade const> const &trades) {

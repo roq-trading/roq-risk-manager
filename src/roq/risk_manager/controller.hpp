@@ -22,7 +22,7 @@ namespace roq {
 namespace risk_manager {
 
 struct Controller final : public client::Handler {
-  Controller(client::Dispatcher &, Settings const &, Config const &, roq::io::Context &context);
+  Controller(client::Dispatcher &, Settings const &, Config const &, roq::io::Context &context, size_t source_count);
 
   Controller(Controller &&) = default;
   Controller(Controller const &) = delete;
@@ -38,10 +38,11 @@ struct Controller final : public client::Handler {
   void operator()(Event<ReferenceData> const &) override;
   void operator()(Event<TradeUpdate> const &) override;
 
-  void publish_accounts();
-  void publish_users();
+  void operator()(MessageInfo const &);
 
-  void load_trades();
+  void publish_accounts(uint8_t source);
+  void publish_users(uint8_t source);
+
   void load_positions();
 
  private:
@@ -50,12 +51,17 @@ struct Controller final : public client::Handler {
   std::unique_ptr<database::Session> database_;
   control::Manager control_manager_;
   Shared shared_;
-  // state
-  UUID last_session_id_ = {};
-  uint64_t last_seqno_ = {};
-  bool ready_ = {};
+  // time
+  std::chrono::nanoseconds last_exchange_time_utc_ = {};
+  // sources
+  struct State final {
+    UUID session_id;
+    uint64_t seqno = {};
+    bool ready = {};
+  };
+  std::vector<State> state_;
   // control
-  absl::flat_hash_set<std::string> latch_by_account_;
+  absl::flat_hash_set<std::string> latch_by_account_;  // XXX
   // buffering
   std::vector<RiskLimit> risk_limits_buffer_;
   std::vector<database::Trade> trades_buffer_;

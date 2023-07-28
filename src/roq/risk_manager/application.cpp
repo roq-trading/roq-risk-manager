@@ -27,7 +27,7 @@ int Application::main(args::Parser const &args) {
   settings.app.drop_copy = true;  // note!
   auto config = Config::parse_file(settings.config_file);
   auto context = roq::io::engine::ContextFactory::create_libevent();
-  client::Bridge{settings, config, params}.dispatch<value_type>(settings, config, *context);
+  client::Bridge{settings, config, params}.dispatch<value_type>(settings, config, *context, std::size(params));
   return EXIT_SUCCESS;
 }
 

@@ -17,11 +17,8 @@ struct Session final : public database::Session {
   explicit Session(std::string_view const &params);
 
  protected:
-  // get
-  void operator()(std::function<void(Trade const &)> const &) override;
   void operator()(std::function<void(Position const &)> const &) override;
 
-  // put
   void operator()(std::span<Trade const> const &) override;
 
  private:

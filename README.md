@@ -29,3 +29,12 @@ to be "slow".
   * Validates new risk exposure against current positions, current risk exposure and limits
 
 ![Design](/assets/images/risk_manager.svg)
+
+## Constraints
+
+* Trade assigned exchange timestamps must be available and strictly increasing
+
+* Gateway will **NOT** net positions: buys and sells will accumulate until limit **OR**
+  risk manager sends a new update where netting has taken place
+
+> Note! It is non-trivial to net positions: there may be global concerns.

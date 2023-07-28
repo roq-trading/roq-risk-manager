@@ -20,8 +20,7 @@ struct Session {
 
   // get
 
-  virtual void operator()(std::function<void(Trade const &)> const &) = 0;     // details
-  virtual void operator()(std::function<void(Position const &)> const &) = 0;  // aggregate
+  virtual void operator()(std::function<void(Position const &)> const &) = 0;
 
   // put
 

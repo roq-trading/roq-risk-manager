@@ -19,9 +19,9 @@ struct Position final {
   std::string_view account;
   std::string_view exchange;
   std::string_view symbol;
-  Side side = {};
-  double quantity = NaN;
-  std::chrono::nanoseconds update_time_utc = {};
+  double long_quantity = NaN;
+  double short_quantity = NaN;
+  std::chrono::nanoseconds create_time_utc = {};
 };
 
 }  // namespace database
@@ -44,16 +44,16 @@ struct fmt::formatter<roq::risk_manager::database::Position> {
         R"(account="{}", )"
         R"(exchange="{}", )"
         R"(symbol="{}", )"
-        R"(side={}, )"
-        R"(quantity={}, )"
-        R"(update_time_utc={})"
+        R"(long_quantity={}, )"
+        R"(short_quantity={}, )"
+        R"(create_time_utc={})"
         R"(}})"_cf,
         value.user,
         value.account,
         value.exchange,
         value.symbol,
-        value.side,
-        value.quantity,
-        value.update_time_utc);
+        value.long_quantity,
+        value.short_quantity,
+        value.create_time_utc);
   }
 };

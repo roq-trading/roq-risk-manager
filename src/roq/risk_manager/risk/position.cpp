@@ -16,18 +16,8 @@ Position::Position(Limit const &limit) : long_limit_{limit.long_limit}, short_li
 }
 
 void Position::operator()(database::Position const &position, Instrument const &) {
-  switch (position.side) {
-    using enum Side;
-    case UNDEFINED:
-      assert(false);
-      break;
-    case BUY:
-      long_quantity_ = position.quantity;
-      break;
-    case SELL:
-      short_quantity_ = position.quantity;
-      break;
-  }
+  long_quantity_ = position.long_quantity;
+  short_quantity_ = position.short_quantity;
 }
 
 void Position::operator()(ReferenceData const &, Instrument const &) {

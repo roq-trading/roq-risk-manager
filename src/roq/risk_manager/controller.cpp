@@ -22,11 +22,14 @@ auto const RISK_LIMITS_LABEL = "risk"sv;
 // === IMPLEMENTATION ===
 
 Controller::Controller(
-    client::Dispatcher &dispatcher, Settings const &settings, Config const &config, roq::io::Context &context)
+    client::Dispatcher &dispatcher,
+    Settings const &settings,
+    Config const &config,
+    roq::io::Context &context,
+    size_t source_count)
     : dispatcher_{dispatcher}, context_{context},
       database_{database::Factory::create(settings.db_type, settings.db_params)}, control_manager_{settings, context_},
-      shared_{settings, config} {
-  load_trades();
+      shared_{settings, config}, state_(source_count) {
   load_positions();
 }
 
@@ -36,46 +39,53 @@ Controller::Controller(
 void Controller::operator()(Event<Timer> const &event) {
   context_.drain();
   control_manager_(event);
-  if (!ready_)  // note! wait for "ready" (all accounts have then been downloaded)
-    return;
-  publish_accounts();
-  publish_users();
+  for (size_t source = 0; source < std::size(state_); ++source) {
+    auto const &state = state_[source];
+    if (!state.ready)  // note! wait for "ready" (all accounts have then been downloaded)
+      continue;
+    publish_accounts(static_cast<uint8_t>(source));
+    publish_users(static_cast<uint8_t>(source));
+  }
 }
 
 void Controller::operator()(Event<Connected> const &) {
 }
 
-void Controller::operator()(Event<Disconnected> const &) {
-  last_session_id_ = {};
-  last_seqno_ = {};
-  ready_ = {};
-  latch_by_account_.clear();
+// XXX doesn't support multiple gateways
+void Controller::operator()(Event<Disconnected> const &event) {
+  auto &[message_info, disconnected] = event;
+  state_[message_info.source] = {};
+  latch_by_account_.clear();  // XXX
   log::warn("*** NOT READY ***"sv);
 }
 
 void Controller::operator()(Event<DownloadBegin> const &event) {
   auto &[message_info, download_begin] = event;
+  (*this)(message_info);
   if (std::empty(download_begin.account))
     return;
   log::warn(R"(*** DOWNLOAD NOW IN PROGRESS *** (account="{}"))"sv, download_begin.account);
 }
 
+// XXX doesn't support multiple gateways
 void Controller::operator()(Event<DownloadEnd> const &event) {
   auto &[message_info, download_end] = event;
+  (*this)(message_info);
   if (std::empty(download_end.account))
     return;
   log::warn(R"(*** DOWNLOAD HAS COMPLETED *** (account="{}"))"sv, download_end.account);
-  last_session_id_ = message_info.source_session_id;
-  last_seqno_ = message_info.source_seqno;
-  auto res = latch_by_account_.emplace(download_end.account);
+  auto res = latch_by_account_.emplace(download_end.account);  // XXX
   if (res.second)
     shared_.publish_account(download_end.account);
 }
 
-void Controller::operator()(Event<Ready> const &) {
-  if (ready_)
+void Controller::operator()(Event<Ready> const &event) {
+  auto &[message_info, ready] = event;
+  (*this)(message_info);
+  auto &state = state_[message_info.source];
+  if (state.ready)
     return;
-  ready_ = true;
+  state.ready = true;
   log::warn("*** READY ***"sv);
   auto callback = [&](auto &user) { shared_.publish_user(user.name); };
   shared_.get_all_users(callback);
@@ -96,13 +106,16 @@ void Controller::operator()(Event<ReferenceData> const &event) {
 // note!
 // we are currently persisting trade updates synchronously
 // this should not be an issue for low volume throughput
-// however, for high volume throughput one might consider buffering and postpone
-// persisting until the timer event fires
+// however, for high volume throughput one might consider buffering and postpone persisting until the timer event fires
 void Controller::operator()(Event<TradeUpdate> const &event) {
   log::info("event={}"sv, event);
   auto &[message_info, trade_update] = event;
-  last_session_id_ = message_info.source_session_id;
-  last_seqno_ = message_info.source_seqno;
+  (*this)(message_info);
+  // note! we drop any trades prior to our last seen exchange time
+  if (trade_update.create_time_utc <= last_exchange_time_utc_) {
+    log::warn<1>("*** DROP *** ({} <= {})"sv, trade_update.create_time_utc, last_exchange_time_utc_);
+    return;
+  }
   auto callback = [&](auto &item) { item(trade_update); };
   shared_.get_account(trade_update.account, callback);
   shared_.get_user(trade_update.user, callback);
@@ -118,7 +131,6 @@ void Controller::operator()(Event<TradeUpdate> const &event) {
           .quantity = item.quantity,
           .price = item.price,
           .create_time_utc = trade_update.create_time_utc,
-          .update_time_utc = trade_update.update_time_utc,
           .external_account = trade_update.external_account,
           .external_order_id = trade_update.external_order_id,
           .external_trade_id = item.external_trade_id,
@@ -133,7 +145,15 @@ void Controller::operator()(Event<TradeUpdate> const &event) {
 
 // utilities
 
-void Controller::publish_accounts() {
+void Controller::operator()(MessageInfo const &message_info) {
+  auto &state = state_[message_info.source];
+  state.session_id = message_info.source_session_id;
+  state.seqno = message_info.source_seqno;
+}
+
+// XXX doesn't support multiple gateways
+void Controller::publish_accounts(uint8_t source) {
+  auto const &state = state_[source];
   auto callback = [&](auto &account) {
     risk_limits_buffer_.clear();
     auto callback = [&](auto &position, auto &instrument) {
@@ -147,24 +167,26 @@ void Controller::publish_accounts() {
       };
       risk_limits_buffer_.emplace_back(std::move(risk_limit));
     };
-    shared_.get_publish_by_account(account.name, callback);
+    shared_.get_publish_by_account(account.name, callback);  // XXX
     if (!std::empty(risk_limits_buffer_)) {
       auto risk_limits = RiskLimits{
           .label = RISK_LIMITS_LABEL,
           .account = account.name,
           .user = {},
           .limits = risk_limits_buffer_,
-          .session_id = last_session_id_,
-          .seqno = last_seqno_,
+          .session_id = state.session_id,
+          .seqno = state.seqno,
       };
       log::debug("risk_limits={}"sv, risk_limits);
-      dispatcher_.send(risk_limits, 0);  // XXX
+      dispatcher_.send(risk_limits, source);
     }
   };
   shared_.get_all_accounts(callback);
 }
 
-void Controller::publish_users() {
+// XXX doesn't support multiple gateways
+void Controller::publish_users(uint8_t source) {
+  auto const &state = state_[source];
   auto callback = [&](auto &user) {
     risk_limits_buffer_.clear();
     auto callback = [&](auto &position, auto &instrument) {
@@ -178,40 +200,37 @@ void Controller::publish_users() {
       };
       risk_limits_buffer_.emplace_back(std::move(risk_limit));
     };
-    shared_.get_publish_by_user(user.name, callback);
+    shared_.get_publish_by_user(user.name, callback);  // XXX
     if (!std::empty(risk_limits_buffer_)) {
       auto risk_limits = RiskLimits{
           .label = RISK_LIMITS_LABEL,
           .account = {},
           .user = user.name,
           .limits = risk_limits_buffer_,
-          .session_id = last_session_id_,
-          .seqno = last_seqno_,
+          .session_id = state.session_id,
+          .seqno = state.seqno,
       };
       log::debug("risk_limits={}"sv, risk_limits);
-      dispatcher_.send(risk_limits, 0);  // XXX
+      dispatcher_.send(risk_limits, source);
     }
   };
   shared_.get_all_users(callback);
 }
 
-void Controller::load_trades() {
-  trades_buffer_.clear();
-  auto callback = [&buffer = trades_buffer_](database::Trade const &trade) {
-    log::debug("trade={}"sv, trade);
-    buffer.emplace_back(trade);
-  };
-  (*database_)(callback);
-}
-
 void Controller::load_positions() {
-  auto dispatch = [&shared = shared_](database::Position const &position) {
+  auto dispatch = [&last_exchange_time_utc = last_exchange_time_utc_,
+                   &shared = shared_](database::Position const &position) {
     auto callback = [&](auto &item) { item(position); };
     log::debug("position={}"sv, position);
-    if (!std::empty(position.account))
-      shared.get_account(position.account, callback);
-    if (!std::empty(position.user))
+    last_exchange_time_utc = std::max(last_exchange_time_utc, position.create_time_utc);
+    if (!std::empty(position.user)) {
+      assert(std::empty(position.account));
       shared.get_user(position.user, callback);
+    }
+    if (!std::empty(position.account)) {
+      assert(std::empty(position.user));
+      shared.get_account(position.account, callback);
+    }
   };
   (*database_)(dispatch);
 }

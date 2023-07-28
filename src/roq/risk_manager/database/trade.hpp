@@ -14,6 +14,7 @@ namespace roq {
 namespace risk_manager {
 namespace database {
 
+// note! replace std::string_view with std::string if you need to buffer trade updates
 struct Trade final {
   std::string_view user;
   std::string_view account;
@@ -23,7 +24,7 @@ struct Trade final {
   double quantity = NaN;
   double price = NaN;
   std::chrono::nanoseconds create_time_utc = {};
-  std::chrono::nanoseconds update_time_utc = {};
+  // note! following might be useful for reconciliation purposes
   std::string_view external_account;
   std::string_view external_order_id;
   std::string_view external_trade_id;
@@ -53,7 +54,6 @@ struct fmt::formatter<roq::risk_manager::database::Trade> {
         R"(quantity={}, )"
         R"(price={}, )"
         R"(create_time_utc={}, )"
-        R"(update_time_utc={}, )"
         R"(external_account="{}", )"
         R"(external_order_id="{}", )"
         R"(external_trade_id="{}")"
@@ -66,7 +66,6 @@ struct fmt::formatter<roq::risk_manager::database::Trade> {
         value.quantity,
         value.price,
         value.create_time_utc,
-        value.update_time_utc,
         value.external_account,
         value.external_order_id,
         value.external_trade_id);
