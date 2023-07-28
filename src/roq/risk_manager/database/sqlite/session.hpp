@@ -11,9 +11,10 @@
 namespace roq {
 namespace risk_manager {
 namespace database {
+namespace sqlite {
 
-struct SQLite final : public Session {
-  explicit SQLite(std::string_view const &params);
+struct Session final : public database::Session {
+  explicit Session(std::string_view const &params);
 
  protected:
   // get
@@ -27,6 +28,7 @@ struct SQLite final : public Session {
   std::unique_ptr<third_party::sqlite::Connection> connection_;
 };
 
+}  // namespace sqlite
 }  // namespace database
 }  // namespace risk_manager
 }  // namespace roq

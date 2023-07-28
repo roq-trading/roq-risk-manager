@@ -23,7 +23,7 @@ CACHE_DIR="$HOME/var/lib/roq/cache/risk-manager"
 
 mkdir -p "$CACHE_DIR"
 
-$PREFIX "./risk-manager" \
+$PREFIX "./roq-risk-manager" \
   --name "$NAME" \
   --config_file "config/$NAME.toml" \
   --db_type "sqlite" \

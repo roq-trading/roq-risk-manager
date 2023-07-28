@@ -1,7 +1,11 @@
 set(TARGET_NAME ${PROJECT_NAME}-database)
 
-set(SOURCES factory.cpp sqlite.cpp)
+add_subdirectory(sqlite)
 
-add_library(${TARGET_NAME} OBJECT ${SOURCES})
+set(SOURCES factory.cpp)
 
-target_link_libraries(${TARGET_NAME} PRIVATE ${PROJECT_NAME}-third_party-sqlite fmt::fmt)
+add_library(${TARGET_NAME} SHARED ${SOURCES})
+
+target_link_libraries(${TARGET_NAME} PRIVATE ${PROJECT_NAME}-database-sqlite fmt::fmt)
+
+install(TARGETS ${TARGET_NAME})

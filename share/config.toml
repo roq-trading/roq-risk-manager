@@ -1,0 +1,16 @@
+symbols = [                                                                                                                                                                                                                                                                                                                                                 
+  "^BTC-[0-9]{1,2}[A-Z]{3}[0-9]{2}$",  # futures                                                                           
+  "^ETH-[0-9]{1,2}[A-Z]{3}[0-9]{2}$",  # futures                                                                           
+  "^BTC(_USD[A-Z]?)?-PERPETUAL$",      # swaps                                                                          
+  "^ETH(_USD[A-Z]?)?-PERPETUAL$",      # swaps                                                                          
+]
+
+[accounts.A1.deribit.BTC-PERPETUAL]
+long_limit = 10
+short_limit = 5
+[accounts.A1.deribit.ETH-PERPETUAL]
+long_limit = 2
+
+[users.trader.deribit.BTC-PERPETUAL]
+long_limit = 5
+short_limit = 2

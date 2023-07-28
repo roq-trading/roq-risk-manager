@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2023, Hans Erik Thrane */
 
-#include "roq/risk_manager/database/sqlite.hpp"
+#include "roq/risk_manager/database/sqlite/session.hpp"
 
 #include "roq/logging.hpp"
 
@@ -11,6 +11,7 @@ using namespace std::literals;
 namespace roq {
 namespace risk_manager {
 namespace database {
+namespace sqlite {
 
 // === CONSTANTS ===
 
@@ -162,11 +163,11 @@ auto create_positions_select_statement(auto &connection, auto &table_name) {
 
 // === IMPLEMENTATION ===
 
-SQLite::SQLite(std::string_view const &params) : connection_{create_connection(params)} {
+Session::Session(std::string_view const &params) : connection_{create_connection(params)} {
   create_table_trades(*connection_, TABLE_NAME_TRADES);
 }
 
-void SQLite::operator()(Callback<Trade> &callback) {
+void Session::operator()(Callback<Trade> &callback) {
   auto statement = create_table_trades_select_statement(*connection_, TABLE_NAME_TRADES);
   while (statement.step()) {
     auto user = statement.get<std::string>(0);
@@ -200,7 +201,7 @@ void SQLite::operator()(Callback<Trade> &callback) {
   callback.finish();
 }
 
-void SQLite::operator()(Callback<Position> &callback) {
+void Session::operator()(Callback<Position> &callback) {
   auto statement = create_positions_select_statement(*connection_, TABLE_NAME_TRADES);
   while (statement.step()) {
     auto user = statement.get<std::string>(0);
@@ -224,13 +225,14 @@ void SQLite::operator()(Callback<Position> &callback) {
   callback.finish();
 }
 
-void SQLite::operator()(std::span<Trade const> const &trades) {
+void Session::operator()(std::span<Trade const> const &trades) {
   for (auto &item : trades) {
     auto statement = create_table_trades_insert_statement(*connection_, TABLE_NAME_TRADES, item);
     statement.step();
   }
 }
 
+}  // namespace sqlite
 }  // namespace database
 }  // namespace risk_manager
 }  // namespace roq

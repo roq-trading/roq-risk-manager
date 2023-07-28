@@ -6,7 +6,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/scripts/cmake ${CMAKE_MODULE_P
 
 # project
 
-project(risk-manager)
+project(roq-risk-manager)
 
 # conda
 
@@ -78,3 +78,10 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/test)
 find_package(benchmark REQUIRED)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/benchmark)
+
+# config
+
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/ DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
+
+install(FILES ${CMAKE_SOURCE_DIR}/CHANGELOG.md
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/doc/${PROJECT_NAME})
