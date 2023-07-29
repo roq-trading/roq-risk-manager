@@ -12,12 +12,15 @@ namespace roq {
 namespace risk_manager {
 namespace risk {
 
-Position::Position(Limit const &limit) : long_limit_{limit.long_limit}, short_limit_{limit.short_limit} {
+Position::Position(Limit const &limit)
+    : allow_netting{limit.allow_netting}, long_position_limit_{limit.long_position_limit},
+      short_position_limit_{limit.short_position_limit}, long_risk_exposure_limit_{limit.long_risk_exposure_limit},
+      short_risk_exposure_limit_{limit.short_risk_exposure_limit} {
 }
 
 void Position::operator()(database::Position const &position, Instrument const &) {
-  long_quantity_ = position.long_quantity;
-  short_quantity_ = position.short_quantity;
+  long_position_ = position.long_quantity;
+  short_position_ = position.short_quantity;
 }
 
 void Position::operator()(ReferenceData const &, Instrument const &) {
@@ -34,8 +37,8 @@ void Position::operator()(TradeUpdate const &trade_update, Instrument const &ins
       continue;
     // note! this could be more complex, e.g. omnibus accounting
     quantity_ += sign * item.quantity;
-    long_quantity_ = std::max(quantity_, 0.0);
-    short_quantity_ = std::max(-quantity_, 0.0);
+    long_position_ = std::max(quantity_, 0.0);
+    short_position_ = std::max(-quantity_, 0.0);
     // TEST
     auto quantity = instrument.quantity_to_internal(item.quantity);
     if (!quantity) [[unlikely]] {
@@ -45,12 +48,20 @@ void Position::operator()(TradeUpdate const &trade_update, Instrument const &ins
   }
 }
 
-double Position::buy_limit() const {
-  return std::max(0.0, long_limit_ - long_quantity_);
+double Position::long_position_limit() const {
+  return std::max(0.0, long_position_limit_ - long_position_);
 }
 
-double Position::sell_limit() const {
-  return std::max(0.0, short_limit_ - short_quantity_);
+double Position::short_position_limit() const {
+  return std::max(0.0, short_position_limit_ - short_position_);
+}
+
+double Position::long_risk_exposure_limit() const {
+  return std::max(0.0, long_risk_exposure_limit_ - long_position_);
+}
+
+double Position::short_risk_exposure_limit() const {
+  return std::max(0.0, short_risk_exposure_limit_ - short_position_);
 }
 
 }  // namespace risk

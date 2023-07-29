@@ -13,12 +13,6 @@ using namespace std::literals;
 namespace roq {
 namespace risk_manager {
 
-// === CONSTANTS ===
-
-namespace {
-auto const RISK_LIMITS_LABEL = "risk"sv;
-}
-
 // === IMPLEMENTATION ===
 
 Controller::Controller(
@@ -159,19 +153,22 @@ void Controller::publish_accounts(uint8_t source) {
       auto risk_limit = RiskLimit{
           .exchange = instrument.exchange,
           .symbol = instrument.symbol,
-          .long_quantity = position.long_quantity(),
-          .short_quantity = position.short_quantity(),
-          .buy_limit = position.buy_limit(),
-          .sell_limit = position.sell_limit(),
+          .long_position = position.long_position(),
+          .short_position = position.short_position(),
+          .long_position_limit = position.long_position_limit(),
+          .short_position_limit = position.short_position_limit(),
+          .long_risk_exposure_limit = position.long_risk_exposure_limit(),
+          .short_risk_exposure_limit = position.short_risk_exposure_limit(),
+          .allow_netting = position.allow_netting,
       };
       risk_limits_buffer_.emplace_back(std::move(risk_limit));
     };
     shared_.get_publish_by_account(account.name, callback);
     if (!std::empty(risk_limits_buffer_)) {
       auto risk_limits = RiskLimits{
-          .label = RISK_LIMITS_LABEL,
           .account = account.name,
           .user = {},
+          .strategy = {},
           .limits = risk_limits_buffer_,
           .session_id = state.session_id,
           .seqno = state.seqno,
@@ -192,19 +189,22 @@ void Controller::publish_users(uint8_t source) {
       auto risk_limit = RiskLimit{
           .exchange = instrument.exchange,
           .symbol = instrument.symbol,
-          .long_quantity = position.long_quantity(),
-          .short_quantity = position.short_quantity(),
-          .buy_limit = position.buy_limit(),
-          .sell_limit = position.sell_limit(),
+          .long_position = position.long_position(),
+          .short_position = position.short_position(),
+          .long_position_limit = position.long_position_limit(),
+          .short_position_limit = position.short_position_limit(),
+          .long_risk_exposure_limit = position.long_risk_exposure_limit(),
+          .short_risk_exposure_limit = position.short_risk_exposure_limit(),
+          .allow_netting = position.allow_netting,
       };
       risk_limits_buffer_.emplace_back(std::move(risk_limit));
     };
     shared_.get_publish_by_user(user.name, callback);  // XXX
     if (!std::empty(risk_limits_buffer_)) {
       auto risk_limits = RiskLimits{
-          .label = RISK_LIMITS_LABEL,
           .account = {},
           .user = user.name,
+          .strategy = {},
           .limits = risk_limits_buffer_,
           .session_id = state.session_id,
           .seqno = state.seqno,

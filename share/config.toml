@@ -6,11 +6,13 @@ symbols = [
 ]
 
 [accounts.A1.deribit.BTC-PERPETUAL]
-long_limit = 10
-short_limit = 5
+long_position_limit = 10
+short_position_limit = 5
+allow_netting=true
+
 [accounts.A1.deribit.ETH-PERPETUAL]
-long_limit = 2
+long_position_limit = 2
 
 [users.trader.deribit.BTC-PERPETUAL]
-long_limit = 5
-short_limit = 2
+long_risk_exposure_limit = 5
+short_risk_exposure_limit = 2

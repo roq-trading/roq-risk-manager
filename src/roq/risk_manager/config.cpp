@@ -95,11 +95,20 @@ R parse_limits(auto &node, auto const &name) {
                 if (value_3.is_table()) {
                   auto &table_3 = *value_3.as_table();
                   risk::Limit limit;
-                  find_and_remove(table_3, "long_limit"sv, [&](auto &value) {
-                    limit.long_limit = *value.template value<double>();
+                  find_and_remove(table_3, "long_position_limit"sv, [&](auto &value) {
+                    limit.long_position_limit = *value.template value<double>();
                   });
-                  find_and_remove(table_3, "short_limit"sv, [&](auto &value) {
-                    limit.short_limit = *value.template value<double>();
+                  find_and_remove(table_3, "short_position_limit"sv, [&](auto &value) {
+                    limit.short_position_limit = *value.template value<double>();
+                  });
+                  find_and_remove(table_3, "long_risk_exposure_limit"sv, [&](auto &value) {
+                    limit.long_risk_exposure_limit = *value.template value<double>();
+                  });
+                  find_and_remove(table_3, "short_risk_exposure_limit"sv, [&](auto &value) {
+                    limit.short_risk_exposure_limit = *value.template value<double>();
+                  });
+                  find_and_remove(table_3, "allow_netting"sv, [&](auto &value) {
+                    limit.allow_netting = *value.template value<bool>();
                   });
                   tmp_2.try_emplace(symbol, std::move(limit));
                   check_empty(value_3);

@@ -32,11 +32,14 @@ struct Position final {
   void operator()(ReferenceData const &, Instrument const &);
   void operator()(TradeUpdate const &, Instrument const &);
 
-  double long_quantity() const { return long_quantity_; }
-  double short_quantity() const { return short_quantity_; }
+  double long_position() const { return long_position_; }
+  double short_position() const { return short_position_; }
 
-  double buy_limit() const;
-  double sell_limit() const;
+  double long_position_limit() const;
+  double short_position_limit() const;
+
+  double long_risk_exposure_limit() const;
+  double short_risk_exposure_limit() const;
 
   template <typename Context>
   auto format_to(Context &context) const {
@@ -45,27 +48,37 @@ struct Position final {
     return fmt::format_to(
         context.out(),
         R"({{)"
-        R"(long_limit={}, )"
-        R"(short_limit={}, )"
-        R"(long_quantity={}, )"
-        R"(short_quantity={}, )"
+        R"(allow_netting={}, )"
+        R"(long_position_limit={}, )"
+        R"(short_position_limit={}, )"
+        R"(long_risk_exposure_limit={}, )"
+        R"(short_risk_exposure_limit={}, )"
+        R"(long_position={}, )"
+        R"(short_position={}, )"
         R"(fills=[{}])"
         R"(}})"_cf,
-        long_limit_,
-        short_limit_,
-        long_quantity_,
-        short_quantity_,
+        allow_netting,
+        long_position_limit_,
+        short_position_limit_,
+        long_risk_exposure_limit_,
+        short_risk_exposure_limit_,
+        long_position_,
+        short_position_,
         fmt::join(fills_, ", "sv));
   }
 
+  bool const allow_netting;
+
  private:
-  double const long_limit_;
-  double const short_limit_;
+  double const long_position_limit_;
+  double const short_position_limit_;
+  double const long_risk_exposure_limit_;
+  double const short_risk_exposure_limit_;
   absl::flat_hash_set<std::string> fills_;  // history
   // DEBUG
   double quantity_ = {};
-  double long_quantity_ = {};
-  double short_quantity_ = {};
+  double long_position_ = {};
+  double short_position_ = {};
   // TEST
   int64_t current_ = {};  // XXX TODO issues min_trade_vol changing over time
 };
