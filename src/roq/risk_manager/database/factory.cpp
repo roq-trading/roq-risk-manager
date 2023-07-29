@@ -15,7 +15,8 @@ namespace risk_manager {
 namespace database {
 
 std::unique_ptr<Session> Factory::create(std::string_view const &type, std::string_view const &params) {
-  if (utils::case_insensitive_compare(type, "sqlite"sv) == 0) {
+  if (utils::case_insensitive_compare(type, "sqlite"sv) == 0 ||
+      utils::case_insensitive_compare(type, "sqlite3"sv) == 0) {
     return std::make_unique<sqlite::Session>(params);
   } else {
     log::fatal(R"(Unexpected: database type="{}")"sv, type);

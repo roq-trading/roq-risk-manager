@@ -34,6 +34,8 @@ to be "slow".
 
 * Trade assigned exchange timestamps must be available and strictly increasing
 
+* Gateway will **NOT** allow trading until the risk manager has published limits
+
 * Gateway will **NOT** net positions: buys and sells will accumulate until limit **OR**
   risk manager sends a new update where netting has taken place
 

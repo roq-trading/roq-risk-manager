@@ -2,6 +2,12 @@
 
 NAME="risk"
 
+CONFIG="${CONFIG:-$NAME}"
+
+CONFIG_FILE="$ROQ_CONFIG_PATH/roq-risk-manager/$CONFIG.toml"
+
+echo "CONFIG_FILE=$CONFIG_FILE"
+
 # debug?
 
 if [ "$1" == "debug" ]; then
@@ -20,12 +26,9 @@ else
 fi
 
 CACHE_DIR="$HOME/var/lib/roq/cache/risk-manager"
-CONFIG_DIR="../../../share/"
 
-DB_TYPE="sqlite"
+DB_TYPE="sqlite3"
 DB_PARAMS="$CACHE_DIR/risk.sqlite3"
-
-CONFIG_FILE="$CONFIG_DIR/config.toml"
 
 mkdir -p "$CACHE_DIR"
 

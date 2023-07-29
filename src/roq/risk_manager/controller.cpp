@@ -54,7 +54,7 @@ void Controller::operator()(Event<Connected> const &) {
 void Controller::operator()(Event<Disconnected> const &event) {
   auto &[message_info, disconnected] = event;
   state_[message_info.source] = {};
-  log::warn("*** NOT READY ***"sv);
+  log::warn("*** NOT READY *** (source={})"sv, message_info.source);
 }
 
 void Controller::operator()(Event<DownloadBegin> const &event) {
@@ -62,7 +62,8 @@ void Controller::operator()(Event<DownloadBegin> const &event) {
   (*this)(message_info);
   if (std::empty(download_begin.account))
     return;
-  log::warn(R"(*** DOWNLOAD NOW IN PROGRESS *** (account="{}"))"sv, download_begin.account);
+  log::warn(
+      R"(*** DOWNLOAD NOW IN PROGRESS *** (source={}, account="{}"))"sv, message_info.source, download_begin.account);
 }
 
 void Controller::operator()(Event<DownloadEnd> const &event) {
@@ -70,7 +71,7 @@ void Controller::operator()(Event<DownloadEnd> const &event) {
   (*this)(message_info);
   if (std::empty(download_end.account))
     return;
-  log::warn(R"(*** DOWNLOAD HAS COMPLETED *** (account="{}"))"sv, download_end.account);
+  log::warn(R"(*** DOWNLOAD HAS COMPLETED *** (source={}, account="{}"))"sv, message_info.source, download_end.account);
   auto &state = state_[message_info.source];
   auto res = state.latch_by_account.emplace(download_end.account);
   if (res.second)
@@ -84,7 +85,7 @@ void Controller::operator()(Event<Ready> const &event) {
   if (state.ready)
     return;
   state.ready = true;
-  log::warn("*** READY ***"sv);
+  log::warn("*** READY *** (source={})"sv, message_info.source);
   auto callback = [&](auto &user) { shared_.publish_user(user.name); };
   shared_.get_all_users(callback);
 }
@@ -92,7 +93,7 @@ void Controller::operator()(Event<Ready> const &event) {
 // XXX TODO also use MarketByPrice in case reference data not available...?
 void Controller::operator()(Event<ReferenceData> const &event) {
   auto &[message_info, reference_data] = event;
-  log::debug("reference_data={}"sv, reference_data);
+  // log::debug("reference_data={}"sv, reference_data);
   auto &instrument = shared_.get_instrument(reference_data.exchange, reference_data.symbol);
   if (instrument(reference_data)) {
     auto callback = [&](auto &item) { item(reference_data); };
@@ -106,7 +107,7 @@ void Controller::operator()(Event<ReferenceData> const &event) {
 // this should not be an issue for low volume throughput
 // however, for high volume throughput one might consider buffering and postpone persisting until the timer event fires
 void Controller::operator()(Event<TradeUpdate> const &event) {
-  log::info("event={}"sv, event);
+  log::info<1>("event={}"sv, event);
   auto &[message_info, trade_update] = event;
   (*this)(message_info);
   // note! we drop any trades prior to our last seen exchange time
@@ -114,6 +115,7 @@ void Controller::operator()(Event<TradeUpdate> const &event) {
     log::warn<1>("*** DROP *** ({} <= {})"sv, trade_update.create_time_utc, last_exchange_time_utc_);
     return;
   }
+  log::debug("trade_update={}"sv, trade_update);
   auto callback = [&](auto &item) { item(trade_update); };
   shared_.get_account(trade_update.account, callback);
   shared_.get_user(trade_update.user, callback);
