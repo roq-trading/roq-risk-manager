@@ -17,9 +17,8 @@ struct Session final : public database::Session {
   explicit Session(std::string_view const &params);
 
  protected:
-  void operator()(std::function<void(Position const &)> const &) override;
-
-  void operator()(std::span<Trade const> const &) override;
+  void operator()(std::span<Trade const> const &) override;                 // insert
+  void operator()(std::function<void(Position const &)> const &) override;  // select
 
  private:
   std::unique_ptr<third_party::sqlite::Connection> connection_;

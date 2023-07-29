@@ -51,11 +51,9 @@ void Controller::operator()(Event<Timer> const &event) {
 void Controller::operator()(Event<Connected> const &) {
 }
 
-// XXX doesn't support multiple gateways
 void Controller::operator()(Event<Disconnected> const &event) {
   auto &[message_info, disconnected] = event;
   state_[message_info.source] = {};
-  latch_by_account_.clear();  // XXX
   log::warn("*** NOT READY ***"sv);
 }
 
@@ -67,14 +65,14 @@ void Controller::operator()(Event<DownloadBegin> const &event) {
   log::warn(R"(*** DOWNLOAD NOW IN PROGRESS *** (account="{}"))"sv, download_begin.account);
 }
 
-// XXX doesn't support multiple gateways
 void Controller::operator()(Event<DownloadEnd> const &event) {
   auto &[message_info, download_end] = event;
   (*this)(message_info);
   if (std::empty(download_end.account))
     return;
   log::warn(R"(*** DOWNLOAD HAS COMPLETED *** (account="{}"))"sv, download_end.account);
-  auto res = latch_by_account_.emplace(download_end.account);  // XXX
+  auto &state = state_[message_info.source];
+  auto res = state.latch_by_account.emplace(download_end.account);
   if (res.second)
     shared_.publish_account(download_end.account);
 }
@@ -151,7 +149,6 @@ void Controller::operator()(MessageInfo const &message_info) {
   state.seqno = message_info.source_seqno;
 }
 
-// XXX doesn't support multiple gateways
 void Controller::publish_accounts(uint8_t source) {
   auto const &state = state_[source];
   auto callback = [&](auto &account) {
@@ -167,7 +164,7 @@ void Controller::publish_accounts(uint8_t source) {
       };
       risk_limits_buffer_.emplace_back(std::move(risk_limit));
     };
-    shared_.get_publish_by_account(account.name, callback);  // XXX
+    shared_.get_publish_by_account(account.name, callback);
     if (!std::empty(risk_limits_buffer_)) {
       auto risk_limits = RiskLimits{
           .label = RISK_LIMITS_LABEL,

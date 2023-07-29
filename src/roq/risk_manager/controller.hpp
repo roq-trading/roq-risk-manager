@@ -58,10 +58,9 @@ struct Controller final : public client::Handler {
     UUID session_id;
     uint64_t seqno = {};
     bool ready = {};
+    absl::flat_hash_set<std::string> latch_by_account;
   };
   std::vector<State> state_;
-  // control
-  absl::flat_hash_set<std::string> latch_by_account_;  // XXX
   // buffering
   std::vector<RiskLimit> risk_limits_buffer_;
   std::vector<database::Trade> trades_buffer_;
