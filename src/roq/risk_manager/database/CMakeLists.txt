@@ -6,6 +6,7 @@ set(SOURCES factory.cpp)
 
 add_library(${TARGET_NAME} SHARED ${SOURCES})
 
-target_link_libraries(${TARGET_NAME} PRIVATE ${PROJECT_NAME}-database-sqlite fmt::fmt)
+target_link_libraries(${TARGET_NAME} PRIVATE ${PROJECT_NAME}-database-sqlite
+                                             ${PROJECT_NAME}-third_party-sqlite fmt::fmt)
 
 install(TARGETS ${TARGET_NAME})

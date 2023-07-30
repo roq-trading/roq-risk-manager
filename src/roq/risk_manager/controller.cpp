@@ -118,6 +118,7 @@ void Controller::operator()(Event<TradeUpdate> const &event) {
     for (auto &item : trade_update.fills) {
       auto trade = database::Trade{
           .user = trade_update.user,
+          .strategy_id = trade_update.strategy_id,
           .account = trade_update.account,
           .exchange = trade_update.exchange,
           .symbol = trade_update.symbol,
@@ -166,9 +167,9 @@ void Controller::publish_accounts(uint8_t source) {
     shared_.get_publish_by_account(account.name, callback);
     if (!std::empty(risk_limits_buffer_)) {
       auto risk_limits = RiskLimits{
-          .account = account.name,
           .user = {},
-          .strategy = {},
+          .strategy_id = {},
+          .account = account.name,
           .limits = risk_limits_buffer_,
           .session_id = state.session_id,
           .seqno = state.seqno,
@@ -202,9 +203,9 @@ void Controller::publish_users(uint8_t source) {
     shared_.get_publish_by_user(user.name, callback);  // XXX
     if (!std::empty(risk_limits_buffer_)) {
       auto risk_limits = RiskLimits{
-          .account = {},
           .user = user.name,
-          .strategy = {},
+          .strategy_id = {},
+          .account = {},
           .limits = risk_limits_buffer_,
           .session_id = state.session_id,
           .seqno = state.seqno,

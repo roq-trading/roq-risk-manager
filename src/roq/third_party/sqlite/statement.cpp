@@ -120,6 +120,23 @@ int32_t Statement::get(size_t column) {
 }
 
 template <>
+uint32_t Statement::get(size_t column) {
+  auto type = sqlite3_column_type(*this, static_cast<int>(column));
+  switch (type) {
+    case SQLITE_NULL:
+      return {};
+    case SQLITE_INTEGER: {
+      auto result = sqlite3_column_int64(*this, static_cast<int>(column));
+      if (result < 0 || result > std::numeric_limits<uint32_t>::max())
+        throw RuntimeError{"Unexpected: value={} exceeds maximum of uint32"sv, result};
+      return static_cast<uint32_t>(result);
+    }
+    default:
+      throw RuntimeError{R"(Unexpected: type={})"sv, type};
+  }
+}
+
+template <>
 int64_t Statement::get(size_t column) {
   auto type = sqlite3_column_type(*this, static_cast<int>(column));
   switch (type) {

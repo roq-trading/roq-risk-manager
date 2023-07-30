@@ -26,6 +26,7 @@ auto select_positions_by_user(auto &connection) {
   auto query = fmt::format(
       "SELECT "
       "  t1.user, "
+      "  0 AS strategy_id, "
       "  '' AS account, "
       "  t1.exchange, "
       "  t1.symbol, "
@@ -78,6 +79,7 @@ auto select_positions_by_account(auto &connection) {
   auto query = fmt::format(
       "SELECT "
       "  '' AS user, "
+      "  0 AS strategy_id, "
       "  t1.account, "
       "  t1.exchange, "
       "  t1.symbol, "
@@ -129,11 +131,13 @@ auto select_positions_by_account(auto &connection) {
 
 // === IMPLEMENTATION ===
 
+// XXX TODO maybe exchange + external_trade_id is enough for primary key?
 void Trades::create(third_party::sqlite::Connection &connection) {
   log::info(R"(Creating table "{}")"sv, TABLE_NAME);
   auto query = fmt::format(
       "CREATE TABLE IF NOT EXISTS {} ("
       "  user TEXT, "
+      "  strategy_id INTEGER, "
       "  account TEXT NOT NULL, "
       "  exchange TEXT NOT NULL, "
       "  symbol TEXT NOT NULL, "
@@ -145,6 +149,8 @@ void Trades::create(third_party::sqlite::Connection &connection) {
       "  external_order_id TEXT, "
       "  external_trade_id TEXT NOT NULL, "
       "  PRIMARY KEY ("
+      "    user, "
+      "    strategy_id, "
       "    account, "
       "    exchange, "
       "    symbol, "
@@ -169,6 +175,7 @@ void Trades::create(third_party::sqlite::Connection &connection) {
     connection.exec(query);
   };
   create_index("user"sv);
+  create_index("strategy_id"sv);
   create_index("account"sv);
   create_index("exchange"sv);
   create_index("symbol"sv);
@@ -185,6 +192,7 @@ void Trades::insert(third_party::sqlite::Connection &connection, std::span<Trade
         "VALUES ('{}','{}','{}','{}','{}',{},{},{},'{}','{}','{}')"sv,
         TABLE_NAME,
         trade.user,
+        trade.strategy_id,
         trade.account,
         trade.exchange,
         trade.symbol,
@@ -208,14 +216,16 @@ void Trades::select(
   auto dispatch = [&](auto &&statement) {
     while (statement.step()) {
       auto user = statement.template get<std::string>(0);
-      auto account = statement.template get<std::string>(1);
-      auto exchange = statement.template get<std::string>(2);
-      auto symbol = statement.template get<std::string>(3);
-      auto long_quantity = statement.template get<double>(4);
-      auto short_quantity = statement.template get<double>(5);
-      auto create_time_utc = statement.template get<int64_t>(6);
+      auto strategy_id = statement.template get<uint32_t>(1);
+      auto account = statement.template get<std::string>(2);
+      auto exchange = statement.template get<std::string>(3);
+      auto symbol = statement.template get<std::string>(4);
+      auto long_quantity = statement.template get<double>(5);
+      auto short_quantity = statement.template get<double>(6);
+      auto create_time_utc = statement.template get<int64_t>(7);
       auto position = Position{
           .user = user,
+          .strategy_id = strategy_id,
           .account = account,
           .exchange = exchange,
           .symbol = symbol,

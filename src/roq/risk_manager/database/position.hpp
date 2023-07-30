@@ -16,6 +16,7 @@ namespace database {
 
 struct Position final {
   std::string_view user;
+  uint32_t strategy_id = {};
   std::string_view account;
   std::string_view exchange;
   std::string_view symbol;
@@ -41,6 +42,7 @@ struct fmt::formatter<roq::risk_manager::database::Position> {
         context.out(),
         R"({{)"
         R"(user="{}", )"
+        R"(strategy_id={}, )"
         R"(account="{}", )"
         R"(exchange="{}", )"
         R"(symbol="{}", )"
@@ -49,6 +51,7 @@ struct fmt::formatter<roq::risk_manager::database::Position> {
         R"(create_time_utc={})"
         R"(}})"_cf,
         value.user,
+        value.strategy_id,
         value.account,
         value.exchange,
         value.symbol,

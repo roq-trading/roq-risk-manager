@@ -17,6 +17,7 @@ namespace database {
 // note! replace std::string_view with std::string if you need to buffer trade updates
 struct Trade final {
   std::string_view user;
+  uint32_t strategy_id = {};
   std::string_view account;
   std::string_view exchange;
   std::string_view symbol;
@@ -47,6 +48,7 @@ struct fmt::formatter<roq::risk_manager::database::Trade> {
         context.out(),
         R"({{)"
         R"(user="{}", )"
+        R"(strategy_id={}, )"
         R"(account="{}", )"
         R"(exchange="{}", )"
         R"(symbol="{}", )"
@@ -59,6 +61,7 @@ struct fmt::formatter<roq::risk_manager::database::Trade> {
         R"(external_trade_id="{}")"
         R"(}})"_cf,
         value.user,
+        value.strategy_id,
         value.account,
         value.exchange,
         value.symbol,
