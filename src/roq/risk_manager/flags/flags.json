@@ -29,6 +29,11 @@
       "validator": "roq::flags::validators::ListenAddress",
       "required": true,
       "description": "control listen address"
+    },
+    {
+      "name": "control_url_prefix",
+      "type": "std::string",
+      "description": "control url prefix"
     }
   ]
 }

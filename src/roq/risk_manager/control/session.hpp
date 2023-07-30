@@ -8,11 +8,14 @@
 
 #include "roq/web/rest/server.hpp"
 
+#include "roq/risk_manager/control/response.hpp"
+#include "roq/risk_manager/control/shared.hpp"
+
 namespace roq {
 namespace risk_manager {
 namespace control {
 
-struct Session final : public roq::web::rest::Server::Handler {
+struct Session final : public web::rest::Server::Handler {
   struct Disconnected final {
     uint64_t session_id = {};
   };
@@ -21,21 +24,24 @@ struct Session final : public roq::web::rest::Server::Handler {
     virtual void operator()(Disconnected const &) = 0;
   };
 
-  Session(Handler &, uint64_t session_id, roq::io::net::tcp::Connection::Factory &);
+  Session(Handler &, uint64_t session_id, io::net::tcp::Connection::Factory &, Shared &);
 
  protected:
   void close();
 
   // web::rest::Server::Handler
-  void operator()(roq::web::rest::Server::Disconnected const &) override;
-  void operator()(roq::web::rest::Server::Request const &) override;
-  void operator()(roq::web::rest::Server::Text const &) override;
-  void operator()(roq::web::rest::Server::Binary const &) override;
+  void operator()(web::rest::Server::Disconnected const &) override;
+  void operator()(web::rest::Server::Request const &) override;
+  void operator()(web::rest::Server::Text const &) override;
+  void operator()(web::rest::Server::Binary const &) override;
+
+  void route(Response &, web::rest::Server::Request const &, std::span<std::string_view> const &path);
 
  private:
   Handler &handler_;
   uint64_t const session_id_;
-  std::unique_ptr<roq::web::rest::Server> server_;
+  std::unique_ptr<web::rest::Server> server_;
+  Shared shared_;
 };
 
 }  // namespace control

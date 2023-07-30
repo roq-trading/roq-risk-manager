@@ -1,6 +1,6 @@
 set(TARGET_NAME ${PROJECT_NAME}-control)
 
-set(SOURCES session.cpp manager.cpp)
+set(SOURCES manager.cpp response.cpp session.cpp shared.cpp)
 
 add_library(${TARGET_NAME} OBJECT ${SOURCES})
 

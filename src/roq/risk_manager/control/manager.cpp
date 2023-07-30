@@ -44,7 +44,7 @@ auto create_network_address(auto &settings) {
 // === IMPLEMENTATION ===
 
 Manager::Manager(Settings const &settings, io::Context &context)
-    : listener_{context.create_tcp_listener(*this, create_network_address(settings))} {
+    : listener_{context.create_tcp_listener(*this, create_network_address(settings))}, shared_{settings} {
 }
 
 void Manager::operator()(Event<Timer> const &event) {
@@ -57,7 +57,7 @@ void Manager::operator()(Event<Timer> const &event) {
 
 void Manager::operator()(io::net::tcp::Connection::Factory &factory) {
   auto session_id = ++next_session_id_;
-  auto session = std::make_unique<Session>(*this, session_id, factory);
+  auto session = std::make_unique<Session>(*this, session_id, factory, shared_);
   sessions_.emplace(session_id, std::move(session));
 }
 

@@ -16,6 +16,7 @@
 #include "roq/risk_manager/settings.hpp"
 
 #include "roq/risk_manager/control/session.hpp"
+#include "roq/risk_manager/control/shared.hpp"
 
 namespace roq {
 namespace risk_manager {
@@ -41,6 +42,8 @@ struct Manager final : public Session::Handler, public io::net::tcp::Listener::H
  private:
   // io
   std::unique_ptr<io::net::tcp::Listener> listener_;
+  // shared
+  Shared shared_;
   // sessions
   uint64_t next_session_id_ = {};
   absl::flat_hash_map<uint64_t, std::unique_ptr<Session>> sessions_;
