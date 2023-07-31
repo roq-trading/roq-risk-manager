@@ -37,6 +37,8 @@ struct Session final : public web::rest::Server::Handler {
 
   void route(Response &, web::rest::Server::Request const &, std::span<std::string_view> const &path);
 
+  void get_positions(Response &, web::rest::Server::Request const &);
+
  private:
   Handler &handler_;
   uint64_t const session_id_;

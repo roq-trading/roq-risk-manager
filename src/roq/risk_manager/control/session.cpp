@@ -69,10 +69,8 @@ void Session::route(
     using enum roq::web::http::Method;
     case GET:
       if (std::size(path) == 1) {
-        /*
         if (path[0] == "symbols"sv)
-          get_symbols(response, request);
-        */
+          get_positions(response, request);
       }
       break;
     case HEAD:
@@ -90,6 +88,20 @@ void Session::route(
     case TRACE:
       break;
   }
+}
+
+void Session::get_positions(Response &response, roq::web::rest::Server::Request const &) {
+  /*
+  if (std::empty(shared_.symbols)) {
+    response(roq::web::http::Status::NOT_FOUND, roq::web::http::ContentType::APPLICATION_JSON, "[]"sv);
+  } else {
+    response(
+        roq::web::http::Status::OK,
+        roq::web::http::ContentType::APPLICATION_JSON,
+        R"(["{}"])"sv,
+        fmt::join(shared_.symbols, R"(",")"sv));
+  }
+  */
 }
 
 }  // namespace control
