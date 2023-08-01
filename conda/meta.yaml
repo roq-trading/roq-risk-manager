@@ -18,6 +18,7 @@ requirements:
   host:
     - abseil-cpp
     - catch2
+    - nlohmann_json
     - roq-adapter
     - roq-client
     - roq-flags
