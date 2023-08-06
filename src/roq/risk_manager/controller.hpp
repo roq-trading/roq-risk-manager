@@ -21,7 +21,7 @@
 namespace roq {
 namespace risk_manager {
 
-struct Controller final : public client::Handler {
+struct Controller final : public client::Handler, public control::Manager::Handler {
   Controller(client::Dispatcher &, Settings const &, Config const &, roq::io::Context &context, size_t source_count);
 
   Controller(Controller &&) = default;
@@ -37,6 +37,13 @@ struct Controller final : public client::Handler {
   void operator()(Event<Ready> const &) override;
   void operator()(Event<ReferenceData> const &) override;
   void operator()(Event<TradeUpdate> const &) override;
+
+  // control::Manager::Handler
+  bool get_accounts() override;
+  bool get_trades_by_account(
+      std::function<void(database::Trade const &)> const &,
+      std::string_view const &account,
+      std::chrono::nanoseconds start_time) override;
 
   void operator()(MessageInfo const &);
 

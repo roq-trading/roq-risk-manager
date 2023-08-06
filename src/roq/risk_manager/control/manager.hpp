@@ -5,6 +5,7 @@
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 
+#include <functional>
 #include <memory>
 
 #include "roq/api.hpp"
@@ -15,6 +16,8 @@
 
 #include "roq/risk_manager/settings.hpp"
 
+#include "roq/risk_manager/database/trade.hpp"
+
 #include "roq/risk_manager/control/session.hpp"
 #include "roq/risk_manager/control/shared.hpp"
 
@@ -23,7 +26,15 @@ namespace risk_manager {
 namespace control {
 
 struct Manager final : public Session::Handler, public io::net::tcp::Listener::Handler {
-  Manager(Settings const &, io::Context &);
+  struct Handler {
+    virtual bool get_accounts() = 0;
+    virtual bool get_trades_by_account(
+        std::function<void(database::Trade const &)> const &,
+        std::string_view const &account,
+        std::chrono::nanoseconds start_time) = 0;
+  };
+
+  Manager(Handler &, Settings const &, io::Context &);
 
   Manager(Manager &&) = delete;
   Manager(Manager const &) = delete;
@@ -40,6 +51,7 @@ struct Manager final : public Session::Handler, public io::net::tcp::Listener::H
   void remove_zombies();
 
  private:
+  Handler &handler_;
   // io
   std::unique_ptr<io::net::tcp::Listener> listener_;
   // shared

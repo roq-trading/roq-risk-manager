@@ -4,6 +4,9 @@
 
 #include <nlohmann/json.hpp>
 
+#include <charconv>
+#include <chrono>
+
 #include "roq/exceptions.hpp"
 
 #include "roq/logging.hpp"
@@ -15,6 +18,33 @@ using namespace std::literals;
 namespace roq {
 namespace risk_manager {
 namespace control {
+
+// === HELPERS ===
+
+namespace {
+template <typename R>
+R convert_to_timestamp(auto &value) {
+  using result_type = std::remove_cvref<R>::type;
+  if (std::empty(value))
+    return {};
+  int64_t result = {};
+  auto [_, error_code] = std::from_chars(std::data(value), std::data(value) + std::size(value), result);
+  if (error_code == std::errc{}) {
+    // XXX TODO: check range
+    return result_type{result};
+  }
+  switch (error_code) {
+    using namespace std::literals;
+    case std::errc::invalid_argument:
+      throw InvalidArgument{R"(parse: "{}")"sv, value};
+    case std::errc::result_out_of_range:
+      throw RangeError{R"(parse: "{}")"sv, value};
+    default:
+      throw RuntimeError{R"(parse: "{}")"sv, value};
+  }
+  return {};
+}
+}  // namespace
 
 // === IMPLEMENTATION ===
 
@@ -68,9 +98,12 @@ void Session::route(
   switch (request.method) {
     using enum roq::web::http::Method;
     case GET:
-      if (std::size(path) == 1) {
-        if (path[0] == "symbols"sv)
-          get_positions(response, request);
+      if (path[0] == "accounts"sv) {
+        if (std::size(path) == 1)
+          get_accounts(response, request);
+      } else if (path[0] == "trades_by_account"sv) {
+        if (std::size(path) == 1)
+          get_trades_by_account(response, request);
       }
       break;
     case HEAD:
@@ -90,7 +123,33 @@ void Session::route(
   }
 }
 
-void Session::get_positions(Response &response, roq::web::rest::Server::Request const &) {
+void Session::get_accounts(Response &response, roq::web::rest::Server::Request const &request) {
+  if (!std::empty(request.query))
+    throw RuntimeError{"Unexpected: query keys not supported"sv};
+  /*
+  if (std::empty(shared_.symbols)) {
+    response(roq::web::http::Status::NOT_FOUND, roq::web::http::ContentType::APPLICATION_JSON, "[]"sv);
+  } else {
+    response(
+        roq::web::http::Status::OK,
+        roq::web::http::ContentType::APPLICATION_JSON,
+        R"(["{}"])"sv,
+        fmt::join(shared_.symbols, R"(",")"sv));
+  }
+  */
+}
+
+void Session::get_trades_by_account(Response &response, roq::web::rest::Server::Request const &request) {
+  std::string_view account, start_time;
+  for (auto &[key, value] : request.query) {
+    if (key == "account"sv)
+      account = value;
+    else if (key == "start_time"sv)
+      start_time = value;
+    else
+      throw RuntimeError{R"(Unexpected: query key="{}" not supported)"sv, key};
+  }
+  auto tmp = convert_to_timestamp<std::chrono::nanoseconds>(start_time);
   /*
   if (std::empty(shared_.symbols)) {
     response(roq::web::http::Status::NOT_FOUND, roq::web::http::ContentType::APPLICATION_JSON, "[]"sv);

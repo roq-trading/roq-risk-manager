@@ -37,7 +37,8 @@ struct Session final : public web::rest::Server::Handler {
 
   void route(Response &, web::rest::Server::Request const &, std::span<std::string_view> const &path);
 
-  void get_positions(Response &, web::rest::Server::Request const &);
+  void get_accounts(Response &, web::rest::Server::Request const &);
+  void get_trades_by_account(Response &, web::rest::Server::Request const &);
 
  private:
   Handler &handler_;
