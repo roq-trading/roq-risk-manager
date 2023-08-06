@@ -71,7 +71,7 @@ auto select_positions_by_user(auto &connection) {
       "  t1.symbol=t2.symbol"sv,
       TABLE_NAME,
       TABLE_NAME);
-  // log::debug(R"(query="{}")"sv, query);
+  log::debug(R"(query="{}")"sv, query);
   return third_party::sqlite::Statement{connection, query};
 }
 
@@ -124,7 +124,7 @@ auto select_positions_by_account(auto &connection) {
       "  t1.symbol=t2.symbol"sv,
       TABLE_NAME,
       TABLE_NAME);
-  // log::debug(R"(query="{}")"sv, query);
+  log::debug(R"(query="{}")"sv, query);
   return third_party::sqlite::Statement{connection, query};
 }
 }  // namespace
@@ -189,7 +189,7 @@ void Trades::insert(third_party::sqlite::Connection &connection, std::span<Trade
     auto query = fmt::format(
         "INSERT OR REPLACE "
         "INTO {} "
-        "VALUES ('{}','{}','{}','{}','{}',{},{},{},'{}','{}','{}')"sv,
+        "VALUES ('{}',{},'{}','{}','{}','{}',{},{},{},'{}','{}','{}')"sv,
         TABLE_NAME,
         trade.user,
         trade.strategy_id,
@@ -203,7 +203,7 @@ void Trades::insert(third_party::sqlite::Connection &connection, std::span<Trade
         trade.external_account,
         trade.external_order_id,
         trade.external_trade_id);
-    // log::debug(R"(query="{}")"sv, query);
+    log::debug(R"(query="{}")"sv, query);
     auto statement = third_party::sqlite::Statement{connection, query};
     statement.step();
   };
@@ -245,7 +245,7 @@ void Trades::select(
     std::function<void(Trade const &)> const &callback,
     std::string_view const &account,
     std::chrono::nanoseconds start_time) {
-  auto query =
+  auto query = fmt::format(
       "SELECT "
       "  user, "
       "  strategy_id, "
@@ -259,8 +259,18 @@ void Trades::select(
       "  external_account, "
       "  external_order_id, "
       "  external_trade_id "
-      "FROM trades"sv;
-  // log::debug(R"(query="{}")"sv, query);
+      "FROM {}"sv,
+      TABLE_NAME);
+  if (!std::empty(account) || start_time.count()) {
+    fmt::format_to(std::back_inserter(query), " WHERE "sv);
+    if (!std::empty(account))
+      fmt::format_to(std::back_inserter(query), " account='{}' "sv, account);
+    if (!std::empty(account) && start_time.count())
+      fmt::format_to(std::back_inserter(query), " AND "sv);
+    if (start_time.count())
+      fmt::format_to(std::back_inserter(query), " create_time_utc>={} "sv, start_time.count());
+  }
+  log::debug(R"(query="{}")"sv, query);
   auto statement = third_party::sqlite::Statement{connection, query};
   while (statement.step()) {
     auto user = statement.template get<std::string>(0);
@@ -289,6 +299,7 @@ void Trades::select(
         .external_order_id = external_order_id,
         .external_trade_id = external_trade_id,
     };
+    log::debug("trade={}"sv, trade);
     callback(trade);
   }
 }

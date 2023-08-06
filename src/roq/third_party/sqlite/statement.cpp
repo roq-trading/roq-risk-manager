@@ -155,6 +155,10 @@ double Statement::get(size_t column) {
   switch (type) {
     case SQLITE_NULL:
       return NaN;
+    case SQLITE_INTEGER: {
+      auto tmp = sqlite3_column_int64(*this, static_cast<int>(column));
+      return static_cast<double>(tmp);
+    }
     case SQLITE_FLOAT:
       return sqlite3_column_double(*this, static_cast<int>(column));
     default:

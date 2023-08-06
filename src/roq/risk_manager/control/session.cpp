@@ -186,6 +186,7 @@ void Session::get_positions(Response &response, web::rest::Server::Request const
 void Session::get_trades(Response &response, web::rest::Server::Request const &request) {
   std::string_view account, start_time_as_string;
   for (auto &[key, value] : request.query) {
+    log::debug("key={}, value={}"sv, key, value);
     if (key == "account"sv)
       account = value;
     else if (key == "start_time"sv)
