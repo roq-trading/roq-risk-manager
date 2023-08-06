@@ -23,7 +23,7 @@ Controller::Controller(
     size_t source_count)
     : dispatcher_{dispatcher}, context_{context},
       database_{database::Factory::create(settings.db_type, settings.db_params)},
-      control_manager_{*this, settings, context_}, shared_{settings, config}, state_(source_count) {
+      control_manager_{*this, settings, context_, *database_}, shared_{settings, config}, state_(source_count) {
   load_positions();
 }
 
@@ -139,17 +139,7 @@ void Controller::operator()(Event<TradeUpdate> const &event) {
 }
 
 // control::Manager::Handler
-
-bool Controller::get_accounts() {
-  return {};
-}
-
-bool Controller::get_trades_by_account(
-    std::function<void(database::Trade const &)> const &callback,
-    std::string_view const &account,
-    std::chrono::nanoseconds start_time) {
-  return {};
-}
+// note! empty
 
 // utilities
 

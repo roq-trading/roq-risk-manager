@@ -39,11 +39,7 @@ struct Controller final : public client::Handler, public control::Manager::Handl
   void operator()(Event<TradeUpdate> const &) override;
 
   // control::Manager::Handler
-  bool get_accounts() override;
-  bool get_trades_by_account(
-      std::function<void(database::Trade const &)> const &,
-      std::string_view const &account,
-      std::chrono::nanoseconds start_time) override;
+  // note! empty
 
   void operator()(MessageInfo const &);
 

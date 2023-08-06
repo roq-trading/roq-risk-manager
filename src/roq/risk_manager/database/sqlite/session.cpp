@@ -29,6 +29,13 @@ void Session::operator()(std::function<void(Position const &)> const &callback) 
   Trades::select(*connection_, callback);
 }
 
+void Session::operator()(
+    std::function<void(Trade const &)> const &callback,
+    std::string_view const &account,
+    std::chrono::nanoseconds start_time) {
+  Trades::select(*connection_, callback, account, start_time);
+}
+
 void Session::operator()(std::span<Trade const> const &trades) {
   Trades::insert(*connection_, trades);
 }

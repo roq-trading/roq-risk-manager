@@ -16,7 +16,7 @@
 
 #include "roq/risk_manager/settings.hpp"
 
-#include "roq/risk_manager/database/trade.hpp"
+#include "roq/risk_manager/database/session.hpp"
 
 #include "roq/risk_manager/control/session.hpp"
 #include "roq/risk_manager/control/shared.hpp"
@@ -26,15 +26,9 @@ namespace risk_manager {
 namespace control {
 
 struct Manager final : public Session::Handler, public io::net::tcp::Listener::Handler {
-  struct Handler {
-    virtual bool get_accounts() = 0;
-    virtual bool get_trades_by_account(
-        std::function<void(database::Trade const &)> const &,
-        std::string_view const &account,
-        std::chrono::nanoseconds start_time) = 0;
-  };
+  struct Handler {};
 
-  Manager(Handler &, Settings const &, io::Context &);
+  Manager(Handler &, Settings const &, io::Context &, database::Session &);
 
   Manager(Manager &&) = delete;
   Manager(Manager const &) = delete;
@@ -56,6 +50,7 @@ struct Manager final : public Session::Handler, public io::net::tcp::Listener::H
   std::unique_ptr<io::net::tcp::Listener> listener_;
   // shared
   Shared shared_;
+  database::Session &database_;
   // sessions
   uint64_t next_session_id_ = {};
   absl::flat_hash_map<uint64_t, std::unique_ptr<Session>> sessions_;

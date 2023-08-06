@@ -48,9 +48,14 @@ R convert_to_timestamp(auto &value) {
 
 // === IMPLEMENTATION ===
 
-Session::Session(Handler &handler, uint64_t session_id, io::net::tcp::Connection::Factory &factory, Shared &shared)
+Session::Session(
+    Handler &handler,
+    uint64_t session_id,
+    io::net::tcp::Connection::Factory &factory,
+    Shared &shared,
+    database::Session &database)
     : handler_{handler}, session_id_{session_id}, server_{web::rest::ServerFactory::create(*this, factory)},
-      shared_{shared} {
+      shared_{shared}, database_{database} {
 }
 
 void Session::close() {
@@ -94,16 +99,19 @@ void Session::operator()(web::rest::Server::Binary const &) {
 }
 
 void Session::route(
-    Response &response, roq::web::rest::Server::Request const &request, std::span<std::string_view> const &path) {
+    Response &response, web::rest::Server::Request const &request, std::span<std::string_view> const &path) {
   switch (request.method) {
-    using enum roq::web::http::Method;
+    using enum web::http::Method;
     case GET:
       if (path[0] == "accounts"sv) {
         if (std::size(path) == 1)
           get_accounts(response, request);
-      } else if (path[0] == "trades_by_account"sv) {
+      } else if (path[0] == "positions"sv) {
         if (std::size(path) == 1)
-          get_trades_by_account(response, request);
+          get_positions(response, request);
+      } else if (path[0] == "trades"sv) {
+        if (std::size(path) == 1)
+          get_trades(response, request);
       }
       break;
     case HEAD:
@@ -123,44 +131,108 @@ void Session::route(
   }
 }
 
-void Session::get_accounts(Response &response, roq::web::rest::Server::Request const &request) {
+void Session::get_accounts(Response &response, web::rest::Server::Request const &request) {
   if (!std::empty(request.query))
     throw RuntimeError{"Unexpected: query keys not supported"sv};
   /*
   if (std::empty(shared_.symbols)) {
-    response(roq::web::http::Status::NOT_FOUND, roq::web::http::ContentType::APPLICATION_JSON, "[]"sv);
+    response(web::http::Status::NOT_FOUND, web::http::ContentType::APPLICATION_JSON, "[]"sv);
   } else {
     response(
-        roq::web::http::Status::OK,
-        roq::web::http::ContentType::APPLICATION_JSON,
+        web::http::Status::OK,
+        web::http::ContentType::APPLICATION_JSON,
         R"(["{}"])"sv,
         fmt::join(shared_.symbols, R"(",")"sv));
   }
   */
 }
 
-void Session::get_trades_by_account(Response &response, roq::web::rest::Server::Request const &request) {
-  std::string_view account, start_time;
+void Session::get_positions(Response &response, web::rest::Server::Request const &request) {
+  if (!std::empty(request.query))
+    throw RuntimeError{"Unexpected: query keys not supported"sv};
+  std::string result;  // XXX TODO shared encode buffer
+  auto callback = [&](database::Position const &position) {
+    if (!std::empty(result))
+      fmt::format_to(std::back_inserter(result), ","sv);
+    fmt::format_to(
+        std::back_inserter(result),
+        R"({{)"
+        R"("user":"{}",)"
+        R"("strategy_id":{},)"
+        R"("account":"{}",)"
+        R"("exchange":"{}",)"
+        R"("symbol":"{}",)"
+        R"("long_quantity":{},)"
+        R"("short_quantity":{},)"
+        R"("create_time_utc":{})"
+        R"(}})"sv,
+        position.user,
+        position.strategy_id,
+        position.account,
+        position.exchange,
+        position.symbol,
+        position.long_quantity,   // XXX TODO precision
+        position.short_quantity,  // XXX TODO precision
+        position.create_time_utc.count());
+  };
+  database_(callback);
+  if (std::empty(result)) {
+    response(web::http::Status::NOT_FOUND, web::http::ContentType::APPLICATION_JSON, "[]"sv);
+  } else {
+    response(web::http::Status::OK, web::http::ContentType::APPLICATION_JSON, "[{}]"sv, result);
+  }
+}
+
+void Session::get_trades(Response &response, web::rest::Server::Request const &request) {
+  std::string_view account, start_time_as_string;
   for (auto &[key, value] : request.query) {
     if (key == "account"sv)
       account = value;
     else if (key == "start_time"sv)
-      start_time = value;
+      start_time_as_string = value;
     else
       throw RuntimeError{R"(Unexpected: query key="{}" not supported)"sv, key};
   }
-  auto tmp = convert_to_timestamp<std::chrono::nanoseconds>(start_time);
-  /*
-  if (std::empty(shared_.symbols)) {
-    response(roq::web::http::Status::NOT_FOUND, roq::web::http::ContentType::APPLICATION_JSON, "[]"sv);
+  auto start_time = convert_to_timestamp<std::chrono::nanoseconds>(start_time_as_string);
+  std::string result;  // XXX TODO shared encode buffer
+  auto callback = [&](database::Trade const &trade) {
+    if (!std::empty(result))
+      fmt::format_to(std::back_inserter(result), ","sv);
+    fmt::format_to(
+        std::back_inserter(result),
+        R"({{)"
+        R"("user":"{}",)"
+        R"("strategy_id":{},)"
+        R"("account":"{}",)"
+        R"("exchange":"{}",)"
+        R"("symbol":"{}",)"
+        R"("side":"{}",)"
+        R"("quantity":{},)"
+        R"("price":{},)"
+        R"("create_time_utc":{},)"
+        R"("external_account":"{}",)"
+        R"("external_order_id":"{}",)"
+        R"("external_trade_id":"{}")"
+        R"(}})"sv,
+        trade.user,
+        trade.strategy_id,
+        trade.account,
+        trade.exchange,
+        trade.symbol,
+        trade.side,
+        trade.quantity,  // XXX TODO precision
+        trade.price,     // XXX TODO precision
+        trade.create_time_utc.count(),
+        trade.external_account,
+        trade.external_order_id,
+        trade.external_trade_id);
+  };
+  database_(callback, account, start_time);
+  if (std::empty(result)) {
+    response(web::http::Status::NOT_FOUND, web::http::ContentType::APPLICATION_JSON, "[]"sv);
   } else {
-    response(
-        roq::web::http::Status::OK,
-        roq::web::http::ContentType::APPLICATION_JSON,
-        R"(["{}"])"sv,
-        fmt::join(shared_.symbols, R"(",")"sv));
+    response(web::http::Status::OK, web::http::ContentType::APPLICATION_JSON, "[{}]"sv, result);
   }
-  */
 }
 
 }  // namespace control

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <functional>
 #include <span>
 #include <utility>
@@ -22,6 +23,10 @@ struct Session {
   // get
 
   virtual void operator()(std::function<void(Position const &)> const &) = 0;
+  virtual void operator()(
+      std::function<void(Trade const &)> const &,
+      std::string_view const &account,
+      std::chrono::nanoseconds start_time) = 0;
 
   // put
 

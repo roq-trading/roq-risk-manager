@@ -8,6 +8,8 @@
 
 #include "roq/web/rest/server.hpp"
 
+#include "roq/risk_manager/database/session.hpp"
+
 #include "roq/risk_manager/control/response.hpp"
 #include "roq/risk_manager/control/shared.hpp"
 
@@ -24,7 +26,7 @@ struct Session final : public web::rest::Server::Handler {
     virtual void operator()(Disconnected const &) = 0;
   };
 
-  Session(Handler &, uint64_t session_id, io::net::tcp::Connection::Factory &, Shared &);
+  Session(Handler &, uint64_t session_id, io::net::tcp::Connection::Factory &, Shared &, database::Session &);
 
  protected:
   void close();
@@ -38,13 +40,15 @@ struct Session final : public web::rest::Server::Handler {
   void route(Response &, web::rest::Server::Request const &, std::span<std::string_view> const &path);
 
   void get_accounts(Response &, web::rest::Server::Request const &);
-  void get_trades_by_account(Response &, web::rest::Server::Request const &);
+  void get_positions(Response &, web::rest::Server::Request const &);
+  void get_trades(Response &, web::rest::Server::Request const &);
 
  private:
   Handler &handler_;
   uint64_t const session_id_;
   std::unique_ptr<web::rest::Server> server_;
   Shared shared_;
+  database::Session &database_;
 };
 
 }  // namespace control

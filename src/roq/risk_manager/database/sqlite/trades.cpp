@@ -240,6 +240,59 @@ void Trades::select(
   dispatch(select_positions_by_account(connection));
 }
 
+void Trades::select(
+    third_party::sqlite::Connection &connection,
+    std::function<void(Trade const &)> const &callback,
+    std::string_view const &account,
+    std::chrono::nanoseconds start_time) {
+  auto query =
+      "SELECT "
+      "  user, "
+      "  strategy_id, "
+      "  account, "
+      "  exchange, "
+      "  symbol, "
+      "  side, "
+      "  quantity, "
+      "  price, "
+      "  create_time_utc, "
+      "  external_account, "
+      "  external_order_id, "
+      "  external_trade_id "
+      "FROM trades"sv;
+  // log::debug(R"(query="{}")"sv, query);
+  auto statement = third_party::sqlite::Statement{connection, query};
+  while (statement.step()) {
+    auto user = statement.template get<std::string>(0);
+    auto strategy_id = statement.template get<uint32_t>(1);
+    auto account = statement.template get<std::string>(2);
+    auto exchange = statement.template get<std::string>(3);
+    auto symbol = statement.template get<std::string>(4);
+    auto side = statement.template get<std::string>(5);
+    auto quantity = statement.template get<double>(6);
+    auto price = statement.template get<double>(7);
+    auto create_time_utc = statement.template get<int64_t>(8);
+    auto external_account = statement.template get<std::string>(9);
+    auto external_order_id = statement.template get<std::string>(10);
+    auto external_trade_id = statement.template get<std::string>(11);
+    auto trade = Trade{
+        .user = user,
+        .strategy_id = strategy_id,
+        .account = account,
+        .exchange = exchange,
+        .symbol = symbol,
+        .side = magic_enum::enum_cast<Side>(side).value(),  // XXX TODO exception handling
+        .quantity = quantity,
+        .price = price,
+        .create_time_utc = std::chrono::nanoseconds{create_time_utc},
+        .external_account = external_account,
+        .external_order_id = external_order_id,
+        .external_trade_id = external_trade_id,
+    };
+    callback(trade);
+  }
+}
+
 }  // namespace sqlite
 }  // namespace database
 }  // namespace risk_manager

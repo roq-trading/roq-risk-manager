@@ -16,6 +16,11 @@ struct Trades final {
   static void create(third_party::sqlite::Connection &);
   static void insert(third_party::sqlite::Connection &, std::span<Trade const> const &);
   static void select(third_party::sqlite::Connection &, std::function<void(Position const &)> const &);
+  static void select(
+      third_party::sqlite::Connection &,
+      std::function<void(Trade const &)> const &,
+      std::string_view const &account,
+      std::chrono::nanoseconds start_time);
 };
 
 }  // namespace sqlite
