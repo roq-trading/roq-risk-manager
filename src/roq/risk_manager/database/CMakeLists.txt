@@ -10,3 +10,10 @@ target_link_libraries(${TARGET_NAME} PRIVATE ${PROJECT_NAME}-database-sqlite
                                              ${PROJECT_NAME}-third_party-sqlite fmt::fmt)
 
 install(TARGETS ${TARGET_NAME})
+
+if(BUILD_MONGO)
+  add_subdirectory(mongo)
+  target_compile_definitions(${TARGET_NAME} PRIVATE BUILD_MONGO=1)
+  target_link_libraries(${TARGET_NAME} PRIVATE ${PROJECT_NAME}-database-mongo
+                                               mongo::mongocxx_shared)
+endif()

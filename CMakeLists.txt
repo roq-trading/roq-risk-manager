@@ -41,6 +41,13 @@ find_package(roq-logging REQUIRED)
 find_package(roq-io REQUIRED)
 find_package(roq-web REQUIRED)
 
+option(BUILD_MONGO "Support MongoDB" OFF)
+
+if(BUILD_MONGO)
+  find_package(Boost REQUIRED)
+  find_package(mongocxx REQUIRED)
+endif()
+
 if(UNIX AND NOT APPLE)
   set(RT_LIBRARIES rt)
 else()

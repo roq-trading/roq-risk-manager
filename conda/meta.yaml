@@ -17,7 +17,9 @@ requirements:
     - pkg-config
   host:
     - abseil-cpp
+    - boost-cpp
     - catch2
+    - libmongocxx
     - nlohmann_json
     - roq-adapter
     - roq-client
