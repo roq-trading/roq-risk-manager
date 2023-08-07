@@ -183,32 +183,35 @@ void Trades::create(third_party::sqlite::Connection &connection) {
   create_index("create_time_utc"sv, true);
 }
 
-void Trades::insert(third_party::sqlite::Connection &connection, std::span<Trade const> const &trades) {
-  // XXX TODO use prepared statement
-  auto insert_or_replace = [&](auto &trade) {
-    auto query = fmt::format(
-        "INSERT OR REPLACE "
-        "INTO {} "
-        "VALUES ('{}',{},'{}','{}','{}','{}',{},{},{},'{}','{}','{}')"sv,
-        TABLE_NAME,
-        trade.user,
-        trade.strategy_id,
-        trade.account,
-        trade.exchange,
-        trade.symbol,
-        trade.side,
-        trade.quantity,
-        trade.price,
-        trade.create_time_utc.count(),
-        trade.external_account,
-        trade.external_order_id,
-        trade.external_trade_id);
-    log::debug(R"(query="{}")"sv, query);
-    auto statement = third_party::sqlite::Statement{connection, query};
-    statement.step();
-  };
-  for (auto &item : trades)
-    insert_or_replace(item);
+void Trades::select(third_party::sqlite::Connection &connection, std::function<void(Account const &)> const &callback) {
+  auto query = fmt::format(
+      "SELECT "
+      "  DISTINCT(account) AS account, "
+      "  MIN(create_time_utc) AS create_time_utc_min, "
+      "  MAX(create_time_utc) AS create_time_utc_max, "
+      "  COUNT(external_trade_id) AS trade_count "
+      "FROM {} "
+      "GROUP BY "
+      "  account "
+      "ORDER BY "
+      "  account"sv,
+      TABLE_NAME);
+  log::debug(R"(query="{}")"sv, query);
+  auto statement = third_party::sqlite::Statement{connection, query};
+  while (statement.step()) {
+    auto name = statement.template get<std::string>(0);
+    auto create_time_utc_min = statement.template get<int64_t>(1);
+    auto create_time_utc_max = statement.template get<int64_t>(2);
+    auto trade_count = statement.template get<uint64_t>(3);
+    auto account = Account{
+        .name = name,
+        .create_time_utc_min = std::chrono::nanoseconds{create_time_utc_min},
+        .create_time_utc_max = std::chrono::nanoseconds{create_time_utc_max},
+        .trade_count = trade_count,
+    };
+    log::debug("account={}"sv, account);
+    callback(account);
+  }
 }
 
 void Trades::select(
@@ -270,6 +273,11 @@ void Trades::select(
     if (start_time.count())
       fmt::format_to(std::back_inserter(query), " create_time_utc>={} "sv, start_time.count());
   }
+  fmt::format_to(
+      std::back_inserter(query),
+      " ORDER BY "
+      "  account, "
+      "  create_time_utc"sv);
   log::debug(R"(query="{}")"sv, query);
   auto statement = third_party::sqlite::Statement{connection, query};
   while (statement.step()) {
@@ -302,6 +310,34 @@ void Trades::select(
     log::debug("trade={}"sv, trade);
     callback(trade);
   }
+}
+
+void Trades::insert(third_party::sqlite::Connection &connection, std::span<Trade const> const &trades) {
+  // XXX TODO use prepared statement
+  auto insert_or_replace = [&](auto &trade) {
+    auto query = fmt::format(
+        "INSERT OR REPLACE "
+        "INTO {} "
+        "VALUES ('{}',{},'{}','{}','{}','{}',{},{},{},'{}','{}','{}')"sv,
+        TABLE_NAME,
+        trade.user,
+        trade.strategy_id,
+        trade.account,
+        trade.exchange,
+        trade.symbol,
+        trade.side,
+        trade.quantity,
+        trade.price,
+        trade.create_time_utc.count(),
+        trade.external_account,
+        trade.external_order_id,
+        trade.external_trade_id);
+    log::debug(R"(query="{}")"sv, query);
+    auto statement = third_party::sqlite::Statement{connection, query};
+    statement.step();
+  };
+  for (auto &item : trades)
+    insert_or_replace(item);
 }
 
 }  // namespace sqlite

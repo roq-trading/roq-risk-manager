@@ -138,17 +138,29 @@ void Session::route(
 void Session::get_accounts(Response &response, web::rest::Server::Request const &request) {
   if (!std::empty(request.query))
     throw RuntimeError{"Unexpected: query keys not supported"sv};
-  /*
-  if (std::empty(shared_.symbols)) {
+  std::string result;  // XXX TODO shared encode buffer
+  auto callback = [&](database::Account const &account) {
+    if (!std::empty(result))
+      fmt::format_to(std::back_inserter(result), ","sv);
+    fmt::format_to(
+        std::back_inserter(result),
+        R"({{)"
+        R"("name":{},)"
+        R"("create_time_utc_min":{},)"
+        R"("create_time_utc_max":{},)"
+        R"("trade_count":{})"
+        R"(}})"sv,
+        json::String{account.name},
+        account.create_time_utc_min.count(),
+        account.create_time_utc_max.count(),
+        account.trade_count);
+  };
+  database_(callback);
+  if (std::empty(result)) {
     response(web::http::Status::NOT_FOUND, web::http::ContentType::APPLICATION_JSON, "[]"sv);
   } else {
-    response(
-        web::http::Status::OK,
-        web::http::ContentType::APPLICATION_JSON,
-        R"(["{}"])"sv,
-        fmt::join(shared_.symbols, R"(",")"sv));
+    response(web::http::Status::OK, web::http::ContentType::APPLICATION_JSON, "[{}]"sv, result);
   }
-  */
 }
 
 void Session::get_positions(Response &response, web::rest::Server::Request const &request) {

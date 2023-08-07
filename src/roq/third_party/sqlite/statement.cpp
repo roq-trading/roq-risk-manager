@@ -150,6 +150,23 @@ int64_t Statement::get(size_t column) {
 }
 
 template <>
+uint64_t Statement::get(size_t column) {
+  auto type = sqlite3_column_type(*this, static_cast<int>(column));
+  switch (type) {
+    case SQLITE_NULL:
+      return {};
+    case SQLITE_INTEGER: {
+      auto tmp = sqlite3_column_int64(*this, static_cast<int>(column));
+      if (tmp < 0)
+        throw RuntimeError{R"(Unexpected: value={} is negative)"sv, tmp};
+      return static_cast<uint64_t>(tmp);
+    }
+    default:
+      throw RuntimeError{R"(Unexpected: type={})"sv, type};
+  }
+}
+
+template <>
 double Statement::get(size_t column) {
   auto type = sqlite3_column_type(*this, static_cast<int>(column));
   switch (type) {

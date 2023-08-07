@@ -25,6 +25,12 @@ Session::Session(std::string_view const &params) : connection_{create_connection
   Trades::create(*connection_);
 }
 
+// query
+
+void Session::operator()(std::function<void(Account const &)> const &callback) {
+  Trades::select(*connection_, callback);
+}
+
 void Session::operator()(std::function<void(Position const &)> const &callback) {
   Trades::select(*connection_, callback);
 }
@@ -35,6 +41,8 @@ void Session::operator()(
     std::chrono::nanoseconds start_time) {
   Trades::select(*connection_, callback, account, start_time);
 }
+
+// insert
 
 void Session::operator()(std::span<Trade const> const &trades) {
   Trades::insert(*connection_, trades);

@@ -4,6 +4,7 @@
 
 #include "roq/third_party/sqlite/connection.hpp"
 
+#include "roq/risk_manager/database/account.hpp"
 #include "roq/risk_manager/database/position.hpp"
 #include "roq/risk_manager/database/trade.hpp"
 
@@ -13,14 +14,23 @@ namespace database {
 namespace sqlite {
 
 struct Trades final {
+  // create
+
   static void create(third_party::sqlite::Connection &);
-  static void insert(third_party::sqlite::Connection &, std::span<Trade const> const &);
+
+  // query
+
+  static void select(third_party::sqlite::Connection &, std::function<void(Account const &)> const &);
   static void select(third_party::sqlite::Connection &, std::function<void(Position const &)> const &);
   static void select(
       third_party::sqlite::Connection &,
       std::function<void(Trade const &)> const &,
       std::string_view const &account,
       std::chrono::nanoseconds start_time);
+
+  // insert
+
+  static void insert(third_party::sqlite::Connection &, std::span<Trade const> const &);
 };
 
 }  // namespace sqlite
