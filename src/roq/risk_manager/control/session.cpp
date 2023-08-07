@@ -7,9 +7,13 @@
 #include <charconv>
 #include <chrono>
 
+#include "roq/logging.hpp"
+
 #include "roq/exceptions.hpp"
 
-#include "roq/logging.hpp"
+#include "roq/json/datetime.hpp"
+#include "roq/json/number.hpp"
+#include "roq/json/string.hpp"
 
 #include "roq/web/rest/server_factory.hpp"
 
@@ -157,22 +161,22 @@ void Session::get_positions(Response &response, web::rest::Server::Request const
     fmt::format_to(
         std::back_inserter(result),
         R"({{)"
-        R"("user":"{}",)"
+        R"("user":{},)"
         R"("strategy_id":{},)"
-        R"("account":"{}",)"
-        R"("exchange":"{}",)"
-        R"("symbol":"{}",)"
+        R"("account":{},)"
+        R"("exchange":{},)"
+        R"("symbol":{},)"
         R"("long_quantity":{},)"
         R"("short_quantity":{},)"
         R"("create_time_utc":{})"
         R"(}})"sv,
-        position.user,
+        json::String{position.user},
         position.strategy_id,
-        position.account,
-        position.exchange,
-        position.symbol,
-        position.long_quantity,   // XXX TODO precision
-        position.short_quantity,  // XXX TODO precision
+        json::String{position.account},
+        json::String{position.exchange},
+        json::String{position.symbol},
+        json::Number{position.long_quantity},   // XXX TODO precision
+        json::Number{position.short_quantity},  // XXX TODO precision
         position.create_time_utc.count());
   };
   database_(callback);
@@ -202,31 +206,31 @@ void Session::get_trades(Response &response, web::rest::Server::Request const &r
     fmt::format_to(
         std::back_inserter(result),
         R"({{)"
-        R"("user":"{}",)"
+        R"("user":{},)"
         R"("strategy_id":{},)"
-        R"("account":"{}",)"
-        R"("exchange":"{}",)"
-        R"("symbol":"{}",)"
-        R"("side":"{}",)"
+        R"("account":{},)"
+        R"("exchange":{},)"
+        R"("symbol":{},)"
+        R"("side":{},)"
         R"("quantity":{},)"
         R"("price":{},)"
         R"("create_time_utc":{},)"
-        R"("external_account":"{}",)"
-        R"("external_order_id":"{}",)"
-        R"("external_trade_id":"{}")"
+        R"("external_account":{},)"
+        R"("external_order_id":{},)"
+        R"("external_trade_id":{})"
         R"(}})"sv,
-        trade.user,
+        json::String{trade.user},
         trade.strategy_id,
-        trade.account,
-        trade.exchange,
-        trade.symbol,
-        trade.side,
-        trade.quantity,  // XXX TODO precision
-        trade.price,     // XXX TODO precision
+        json::String{trade.account},
+        json::String{trade.exchange},
+        json::String{trade.symbol},
+        json::String{trade.side},
+        json::Number{trade.quantity},  // XXX TODO precision
+        json::Number{trade.price},     // XXX TODO precision
         trade.create_time_utc.count(),
-        trade.external_account,
-        trade.external_order_id,
-        trade.external_trade_id);
+        json::String{trade.external_account},
+        json::String{trade.external_order_id},
+        json::String{trade.external_trade_id});
   };
   database_(callback, account, start_time);
   if (std::empty(result)) {
