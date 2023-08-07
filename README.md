@@ -1,5 +1,6 @@
 A template project for creating your own risk manager.
 
+
 ## Design
 
 The design allows the Gateway to operate autonomously in a low-latency mode with asynchronous
@@ -40,3 +41,41 @@ to be "slow".
   risk manager sends a new update where netting has taken place
 
 > Note! It is non-trivial to net positions: there may be global concerns.
+
+
+## Prerequisites
+
+> Use `stable` for (the approx. monthly) release build.
+> Use `unstable` for the more regularly updated development builds.
+
+### Initialize sub-modules
+
+```bash
+git submodule update --init --recursive
+```
+
+### Create environment (Mambaforge)
+
+```bash
+scripts/create_conda_env.sh stable debug
+```
+
+### Activate environment
+
+```bash
+source opt/conda/bin/activate
+```
+
+## Build the project
+
+> Sometimes you may have to delete CMakeCache.txt if CMake has already cached an incorrect configuration.
+
+```bash
+cmake . && make -j4
+```
+
+## Building your own conda package
+
+```bash
+scripts/build_conda_package.sh stable
+```
