@@ -4,6 +4,8 @@
 
 #include <memory>
 
+#include <mongocxx/client.hpp>
+#include <mongocxx/database.hpp>
 #include <mongocxx/instance.hpp>
 
 #include "roq/risk_manager/database/session.hpp"
@@ -30,6 +32,8 @@ struct Session final : public database::Session {
 
  private:
   mongocxx::instance instance_;
+  mongocxx::client connection_;
+  mongocxx::database database_;
 };
 
 }  // namespace mongo
