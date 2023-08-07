@@ -79,3 +79,25 @@ cmake . && make -j4
 ```bash
 scripts/build_conda_package.sh stable
 ```
+
+## Databases
+
+### SQLite
+
+Always supported.
+
+Easy to use because you don't need to deploy any database services.
+
+### MongoDB
+
+You need to manually install Boost and libmongocxx:
+
+```bash
+mamba install -y boost-cpp libmongocxx
+```
+
+Add `-DBUILD_MONGO=ON` to your cmake command-line like this
+
+```bash
+cmake . -DBUILD_MONGO=ON
+```
