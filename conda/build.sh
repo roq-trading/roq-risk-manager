@@ -35,6 +35,7 @@ cmake \
   ${CMAKE_ARGS} \
   -DCMAKE_INSTALL_PREFIX:PATH=$PREFIX \
   -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_MONGO=ON \
   .
 
 echo -e "\033[1;34m--- MAKE ---\033[0m"
