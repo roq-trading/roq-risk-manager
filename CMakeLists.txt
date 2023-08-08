@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.12)
 
 # cmake
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/scripts/cmake ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_CURRENT_SOURCE_DIR}/scripts/cmake
+                      ${CMAKE_MODULE_PATH})
 
 # project
 
@@ -40,6 +41,14 @@ find_package(roq-flags REQUIRED)
 find_package(roq-logging REQUIRED)
 find_package(roq-io REQUIRED)
 find_package(roq-web REQUIRED)
+
+option(BUILD_CLICKHOUSE "Support ClickHouse" OFF)
+
+if(BUILD_CLICKHOUSE)
+  find_package(ClickHouse_CPP REQUIRED)
+  find_library(LZ4_LIBRARIES lz4 REQUIRED)
+  find_library(CITYHASH_LIBRARIES cityhash REQUIRED)
+endif()
 
 option(BUILD_MONGO "Support MongoDB" OFF)
 

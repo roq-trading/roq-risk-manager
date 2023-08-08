@@ -2,16 +2,12 @@
 
 #pragma once
 
-#include <mongocxx/client.hpp>
-#include <mongocxx/database.hpp>
-#include <mongocxx/instance.hpp>
-
 #include "roq/risk_manager/database/session.hpp"
 
 namespace roq {
 namespace risk_manager {
 namespace database {
-namespace mongo {
+namespace clickhouse {
 
 struct Session final : public database::Session {
   explicit Session(std::string_view const &params);
@@ -33,12 +29,9 @@ struct Session final : public database::Session {
   void operator()(Compress const &) override;
 
  private:
-  mongocxx::instance instance_;
-  mongocxx::client connection_;
-  mongocxx::database database_;
 };
 
-}  // namespace mongo
+}  // namespace clickhouse
 }  // namespace database
 }  // namespace risk_manager
 }  // namespace roq

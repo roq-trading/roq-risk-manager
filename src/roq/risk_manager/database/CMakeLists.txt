@@ -11,6 +11,14 @@ target_link_libraries(${TARGET_NAME} PRIVATE ${PROJECT_NAME}-database-sqlite
 
 install(TARGETS ${TARGET_NAME})
 
+if(BUILD_CLICKHOUSE)
+  add_subdirectory(clickhouse)
+  target_compile_definitions(${TARGET_NAME} PRIVATE BUILD_CLICKHOUSE=1)
+  target_link_libraries(
+    ${TARGET_NAME} PRIVATE ${PROJECT_NAME}-database-clickhouse ${CLICKHOUSE_CPP_LIBRARIES}
+                           ${CITYHASH_LIBRARIES} ${LZ4_LIBRARIES})
+endif()
+
 if(BUILD_MONGO)
   add_subdirectory(mongo)
   target_compile_definitions(${TARGET_NAME} PRIVATE BUILD_MONGO=1)

@@ -88,9 +88,33 @@ Always supported.
 
 Easy to use because you don't need to deploy any database services.
 
+### ClickHouse
+
+Dependencies
+
+* CityHash
+
+* ClickHouse C++
+
+* LZ4
+
+```bash
+mamba install -y --channel https://roq-trading.com/conda/stable \
+	roq-oss-cityhash roq-oss-clickhouse-cpp roq-oss-lz4
+```
+
+Add `-DBUILD_CLICKHOUSE=ON` to your cmake command-line like this
+
+```bash
+cmake . -DBUILD_CLICKHOUSE=ON
+```
 ### MongoDB
 
-You need to manually install Boost and libmongocxx:
+Dependencies
+
+* Boost
+
+* libmongocxx
 
 ```bash
 mamba install -y boost-cpp libmongocxx
