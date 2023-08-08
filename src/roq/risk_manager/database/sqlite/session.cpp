@@ -48,6 +48,14 @@ void Session::operator()(std::span<Trade const> const &trades) {
   Trades::insert(*connection_, trades);
 }
 
+void Session::operator()(std::span<Correction const> const &corrections) {
+  Trades::insert(*connection_, corrections);
+}
+
+void Session::operator()(Compress const &compress) {
+  Trades::compress(*connection_, compress.create_time_utc);
+}
+
 }  // namespace sqlite
 }  // namespace database
 }  // namespace risk_manager

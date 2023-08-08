@@ -53,6 +53,14 @@ void Session::operator()(std::span<Trade const> const &trades) {
   // XXX TODO
 }
 
+void Session::operator()(std::span<Correction const> const &corrections) {
+  // XXX TODO
+}
+
+void Session::operator()(Compress const &compress) {
+  // XXX TODO
+}
+
 }  // namespace mongo
 }  // namespace database
 }  // namespace risk_manager

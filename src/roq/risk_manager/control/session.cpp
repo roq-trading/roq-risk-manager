@@ -123,6 +123,13 @@ void Session::route(
     case POST:
       break;
     case PUT:
+      if (path[0] == "trade"sv) {
+        if (std::size(path) == 1)
+          put_trade(response, request);
+      } else if (path[0] == "compress"sv) {
+        if (std::size(path) == 1)
+          put_compress(response, request);
+      }
       break;
     case DELETE:
       break;
@@ -134,6 +141,8 @@ void Session::route(
       break;
   }
 }
+
+// get
 
 void Session::get_accounts(Response &response, web::rest::Server::Request const &request) {
   if (!std::empty(request.query))
@@ -250,6 +259,87 @@ void Session::get_trades(Response &response, web::rest::Server::Request const &r
   } else {
     response(web::http::Status::OK, web::http::ContentType::APPLICATION_JSON, "[{}]"sv, result);
   }
+}
+
+// put
+
+void Session::put_trade(Response &response, web::rest::Server::Request const &request) {
+  if (std::empty(request.body)) {
+    // XXX TODO what is a proper response?
+    response(web::http::Status::NOT_FOUND, web::http::ContentType::APPLICATION_JSON, R"({{"success":{}}})"sv, false);
+    return;
+  }
+  std::vector<database::Correction> corrections;
+  auto parse_item = [&](auto &item) {
+    database::Correction correction;
+    for (auto &[key, value] : item.items()) {
+      if (key == "user"sv)
+        correction.user = value.template get<std::string_view>();
+      else if (key == "strategy_id"sv)
+        correction.strategy_id = value.template get<uint32_t>();
+      else if (key == "account"sv)
+        correction.account = value.template get<std::string_view>();
+      else if (key == "exchange"sv)
+        correction.exchange = value.template get<std::string_view>();
+      else if (key == "symbol"sv)
+        correction.symbol = value.template get<std::string_view>();
+      else if (key == "side"sv) {
+        auto tmp = value.template get<std::string_view>();
+        correction.side = magic_enum::enum_cast<Side>(tmp).value();
+      } else if (key == "quantity"sv)
+        correction.quantity = value.template get<double>();
+      else if (key == "price"sv)
+        correction.price = value.template get<double>();
+      else if (key == "create_time_utc"sv) {
+        // XXX TODO
+        // correction.create_time_utc = value.template get<std::string_view>();
+      } else if (key == "reason"sv)
+        correction.reason = value.template get<std::string_view>();
+      else
+        throw RuntimeError{R"(Unexpected: json key="{}" not supported)"sv, key};
+    }
+    // XXX TODO validation? ... or maybe database should validate?
+    corrections.emplace_back(std::move(correction));
+  };
+  auto json = nlohmann::json::parse(request.body);
+  if (json.is_array()) {
+    for (auto item : json)  // XXX not sure if reference would work here...
+      parse_item(item);
+  } else {
+    parse_item(json);
+  }
+  database_(corrections);
+  response(web::http::Status::OK, web::http::ContentType::APPLICATION_JSON, R"({{"success":{}}})"sv, true);
+}
+
+void Session::put_compress(Response &response, web::rest::Server::Request const &request) {
+  std::string_view end_time_as_string;
+  for (auto &[key, value] : request.query) {
+    log::debug("key={}, value={}"sv, key, value);
+    if (key == "end_time"sv)
+      end_time_as_string = value;
+    else
+      throw RuntimeError{R"(Unexpected: query key="{}" not supported)"sv, key};
+  }
+  if (!std::empty(request.body)) {
+    if (!std::empty(end_time_as_string))
+      throw RuntimeError{R"(Unexpected: query params and request body?)"sv};
+    auto json = nlohmann::json::parse(request.body);
+    for (auto &[key, value] : json.items()) {
+      if (key == "end_time"sv)
+        end_time_as_string = value.template get<std::string_view>();
+      else
+        throw RuntimeError{R"(Unexpected: json key="{}" not supported)"sv, key};
+    }
+  }
+  if (std::empty(end_time_as_string))
+    throw RuntimeError{R"(Unexpected: no timestamp)"sv};
+  auto create_time_utc = convert_to_timestamp<std::chrono::nanoseconds>(end_time_as_string);
+  auto compress = database::Compress{
+      .create_time_utc = create_time_utc,
+  };
+  database_(compress);
+  response(web::http::Status::OK, web::http::ContentType::APPLICATION_JSON, R"({{"success":{}}})"sv, true);
 }
 
 }  // namespace control

@@ -29,6 +29,10 @@ struct Session final : public database::Session {
 
   // insert
   void operator()(std::span<Trade const> const &) override;
+  void operator()(std::span<Correction const> const &) override;
+
+  // maintenance
+  void operator()(Compress const &) override;
 
  private:
   mongocxx::instance instance_;

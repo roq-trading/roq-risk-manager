@@ -22,6 +22,12 @@ auto const TABLE_NAME = "trades"sv;
 // === HELPERS ===
 
 namespace {
+enum class Type {
+  EXCHANGE,
+  MANUAL,
+  POSITION,
+};
+
 auto select_positions_by_user(auto &connection) {
   auto query = fmt::format(
       "SELECT "
@@ -131,6 +137,8 @@ auto select_positions_by_account(auto &connection) {
 
 // === IMPLEMENTATION ===
 
+// create
+
 // XXX TODO maybe exchange + external_trade_id is enough for primary key?
 void Trades::create(third_party::sqlite::Connection &connection) {
   log::info(R"(Creating table "{}")"sv, TABLE_NAME);
@@ -148,6 +156,8 @@ void Trades::create(third_party::sqlite::Connection &connection) {
       "  external_account TEXT, "
       "  external_order_id TEXT, "
       "  external_trade_id TEXT NOT NULL, "
+      "  reason TEXT NOT NULL, "
+      "  type TEXT NOT NULL, "
       "  PRIMARY KEY ("
       "    user, "
       "    strategy_id, "
@@ -155,7 +165,8 @@ void Trades::create(third_party::sqlite::Connection &connection) {
       "    exchange, "
       "    symbol, "
       "    create_time_utc, "
-      "    external_trade_id"
+      "    external_trade_id, "
+      "    type "
       "  )"
       ")"sv,
       TABLE_NAME);
@@ -181,7 +192,10 @@ void Trades::create(third_party::sqlite::Connection &connection) {
   create_index("symbol"sv);
   create_index("side"sv);
   create_index("create_time_utc"sv, true);
+  create_index("type"sv);
 }
+
+// select
 
 void Trades::select(third_party::sqlite::Connection &connection, std::function<void(Account const &)> const &callback) {
   auto query = fmt::format(
@@ -312,13 +326,15 @@ void Trades::select(
   }
 }
 
+// insert
+
 void Trades::insert(third_party::sqlite::Connection &connection, std::span<Trade const> const &trades) {
   // XXX TODO use prepared statement
   auto insert_or_replace = [&](auto &trade) {
     auto query = fmt::format(
         "INSERT OR REPLACE "
         "INTO {} "
-        "VALUES ('{}',{},'{}','{}','{}','{}',{},{},{},'{}','{}','{}')"sv,
+        "VALUES ('{}',{},'{}','{}','{}','{}',{},{},{},'{}','{}','{}','','{}')"sv,
         TABLE_NAME,
         trade.user,
         trade.strategy_id,
@@ -331,13 +347,50 @@ void Trades::insert(third_party::sqlite::Connection &connection, std::span<Trade
         trade.create_time_utc.count(),
         trade.external_account,
         trade.external_order_id,
-        trade.external_trade_id);
+        trade.external_trade_id,
+        magic_enum::enum_name(Type::EXCHANGE));
     log::debug(R"(query="{}")"sv, query);
     auto statement = third_party::sqlite::Statement{connection, query};
     statement.step();
   };
   for (auto &item : trades)
     insert_or_replace(item);
+}
+
+void Trades::insert(third_party::sqlite::Connection &connection, std::span<Correction const> const &corrections) {
+  auto now = clock::get_realtime();
+  // XXX TODO use prepared statement
+  auto insert_or_replace = [&](auto &correction) {
+    auto create_time_utc = correction.create_time_utc.count() ? correction.create_time_utc : now;
+    // XXX TODO external_trade_id is a primary key -- should maybe require something unique?
+    auto query = fmt::format(
+        "INSERT OR REPLACE "
+        "INTO {} "
+        "VALUES ('{}',{},'{}','{}','{}','{}',{},{},{},'','','','{}','{}')"sv,
+        TABLE_NAME,
+        correction.user,
+        correction.strategy_id,
+        correction.account,
+        correction.exchange,
+        correction.symbol,
+        correction.side,
+        correction.quantity,
+        correction.price,
+        correction.create_time_utc.count(),
+        correction.reason,
+        magic_enum::enum_name(Type::MANUAL));
+    log::debug(R"(query="{}")"sv, query);
+    auto statement = third_party::sqlite::Statement{connection, query};
+    statement.step();
+  };
+  for (auto &item : corrections)
+    insert_or_replace(item);
+}
+
+// maintenance
+
+void Trades::compress(third_party::sqlite::Connection &, std::chrono::nanoseconds create_time_utc) {
+  // XXX TODO accumulate all "trades" prior to create_time_utc and create positions (remember group-by)
 }
 
 }  // namespace sqlite

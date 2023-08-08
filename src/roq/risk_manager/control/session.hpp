@@ -43,6 +43,9 @@ struct Session final : public web::rest::Server::Handler {
   void get_positions(Response &, web::rest::Server::Request const &);
   void get_trades(Response &, web::rest::Server::Request const &);
 
+  void put_trade(Response &, web::rest::Server::Request const &);
+  void put_compress(Response &, web::rest::Server::Request const &);
+
  private:
   Handler &handler_;
   uint64_t const session_id_;

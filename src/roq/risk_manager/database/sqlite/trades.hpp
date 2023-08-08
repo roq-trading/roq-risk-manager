@@ -5,6 +5,7 @@
 #include "roq/third_party/sqlite/connection.hpp"
 
 #include "roq/risk_manager/database/account.hpp"
+#include "roq/risk_manager/database/correction.hpp"
 #include "roq/risk_manager/database/position.hpp"
 #include "roq/risk_manager/database/trade.hpp"
 
@@ -31,6 +32,11 @@ struct Trades final {
   // insert
 
   static void insert(third_party::sqlite::Connection &, std::span<Trade const> const &);
+  static void insert(third_party::sqlite::Connection &, std::span<Correction const> const &);
+
+  // maintenance
+
+  static void compress(third_party::sqlite::Connection &, std::chrono::nanoseconds create_time_utc);
 };
 
 }  // namespace sqlite

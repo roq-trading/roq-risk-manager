@@ -8,6 +8,8 @@
 #include <utility>
 
 #include "roq/risk_manager/database/account.hpp"
+#include "roq/risk_manager/database/compress.hpp"
+#include "roq/risk_manager/database/correction.hpp"
 #include "roq/risk_manager/database/position.hpp"
 #include "roq/risk_manager/database/trade.hpp"
 
@@ -33,6 +35,10 @@ struct Session {
   // insert
 
   virtual void operator()(std::span<Trade const> const &) = 0;
+  virtual void operator()(std::span<Correction const> const &) = 0;
+
+  // maintenance
+  virtual void operator()(Compress const &) = 0;
 
  protected:
   Session() = default;
