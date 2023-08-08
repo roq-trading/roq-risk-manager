@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <clickhouse/client.h>
+
 #include "roq/risk_manager/database/session.hpp"
 
 namespace roq {
@@ -29,6 +31,7 @@ struct Session final : public database::Session {
   void operator()(Compress const &) override;
 
  private:
+  ::clickhouse::Client client_;
 };
 
 }  // namespace clickhouse

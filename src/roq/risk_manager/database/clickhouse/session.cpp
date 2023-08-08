@@ -9,9 +9,25 @@ namespace risk_manager {
 namespace database {
 namespace clickhouse {
 
+// === HELPERS ===
+
+namespace {
+auto create_client(auto &params) {
+  ::clickhouse::ClientOptions options;
+  // XXX TODO better params parsing
+  std::string params_2{params};
+  options.SetHost(params_2);
+  // options.SetPort(settings.db_port);
+  // options.SetSendRetries(3);
+  // options.SetRetryTimeout(5s);
+  // options.TcpKeepAlive(true);
+  return ::clickhouse::Client{options};
+}
+}  // namespace
+
 // === IMPLEMENTATION ===
 
-Session::Session([[maybe_unused]] std::string_view const &params) {
+Session::Session(std::string_view const &params) : client_{create_client(params)} {
 }
 
 // query
