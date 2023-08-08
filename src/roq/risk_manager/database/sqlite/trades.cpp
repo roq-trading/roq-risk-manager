@@ -50,7 +50,8 @@ auto select_positions_by_user(auto &connection) {
       "    SUM(quantity) AS quantity, "
       "    MAX(create_time_utc) AS create_time_utc "
       "  FROM {} "
-      "  WHERE side='BUY' "
+      "  WHERE "
+      "    side='BUY' "
       "  GROUP BY "
       "    user,"
       "    exchange,"
@@ -73,6 +74,63 @@ auto select_positions_by_user(auto &connection) {
       ") t2 "
       "ON "
       "  t1.user=t2.user AND "
+      "  t1.exchange=t2.exchange AND "
+      "  t1.symbol=t2.symbol"sv,
+      TABLE_NAME,
+      TABLE_NAME);
+  log::debug(R"(query="{}")"sv, query);
+  return third_party::sqlite::Statement{connection, query};
+}
+
+// note! only when strategy_id > 0
+auto select_positions_by_strategy(auto &connection) {
+  auto query = fmt::format(
+      "SELECT "
+      "  '' AS user, "
+      "  t1.strategy_id, "
+      "  '' AS account, "
+      "  t1.exchange, "
+      "  t1.symbol, "
+      "  SUM(COALESCE(t1.quantity, 0.0)) AS long_quantity, "
+      "  SUM(COALESCE(t2.quantity, 0.0)) AS short_quantity, "
+      "  MAX("
+      "    COALESCE(t1.create_time_utc, 0), "
+      "    COALESCE(t2.create_time_utc, 0) "
+      "  ) AS create_time_utc "
+      "FROM ( "
+      "  SELECT "
+      "    strategy_id,"
+      "    exchange,"
+      "    symbol,"
+      "    SUM(quantity) AS quantity, "
+      "    MAX(create_time_utc) AS create_time_utc "
+      "  FROM {} "
+      "  WHERE "
+      "    strategy_id > 0 AND "
+      "    side='BUY' "
+      "  GROUP BY "
+      "    strategy_id,"
+      "    exchange,"
+      "    symbol "
+      ") t1 "
+      "FULL OUTER JOIN ( "
+      "  SELECT "
+      "    strategy_id,"
+      "    exchange,"
+      "    symbol,"
+      "    SUM(quantity) AS quantity, "
+      "    MAX(create_time_utc) AS create_time_utc "
+      "  FROM {} "
+      "  WHERE "
+      "    strategy_id > 0 AND "
+      "    side='SELL' "
+      "  GROUP BY "
+      "    strategy_id,"
+      "    exchange,"
+      "    symbol"
+      ") t2 "
+      "ON "
+      "  t1.strategy_id=t2.strategy_id AND "
       "  t1.exchange=t2.exchange AND "
       "  t1.symbol=t2.symbol"sv,
       TABLE_NAME,
@@ -170,6 +228,7 @@ void Trades::create(third_party::sqlite::Connection &connection) {
       "  )"
       ")"sv,
       TABLE_NAME);
+  log::debug(R"(query="{}")"sv, query);
   connection.exec(query);
   auto create_index = [&](auto const &index_name, bool sorted = false) {
     std::string query;
@@ -254,6 +313,7 @@ void Trades::select(
     }
   };
   dispatch(select_positions_by_user(connection));
+  dispatch(select_positions_by_strategy(connection));
   dispatch(select_positions_by_account(connection));
 }
 
