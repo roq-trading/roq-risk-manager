@@ -86,9 +86,11 @@ scripts/build_conda_package.sh stable
 
 Always supported.
 
-Easy to use because you don't need to deploy any database services.
+Easy to use because it's file based (you don't need to deploy a database service).
 
 ### ClickHouse
+
+Opt-in.
 
 Dependencies
 
@@ -109,6 +111,8 @@ Add `-DBUILD_CLICKHOUSE=ON` to your cmake command-line like this
 cmake . -DBUILD_CLICKHOUSE=ON
 ```
 ### MongoDB
+
+Opt-in.
 
 Dependencies
 
