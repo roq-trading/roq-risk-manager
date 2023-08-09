@@ -23,7 +23,8 @@ Controller::Controller(
     size_t source_count)
     : dispatcher_{dispatcher}, context_{context},
       database_{database::Factory::create(settings.db_type, settings.db_params)},
-      control_manager_{*this, settings, context_, *database_}, shared_{settings, config}, state_(source_count) {
+      control_manager_{*this, settings, context_, shared_, *database_}, shared_{settings, config},
+      state_(source_count) {
   load_positions();
 }
 
@@ -131,10 +132,35 @@ void Controller::operator()(Event<TradeUpdate> const &event) {
           .external_trade_id = item.external_trade_id,
       };
       trades_buffer_.emplace_back(std::move(trade));
+      // XXX TODO notify subscribers
     }
     (*database_)(trades_buffer_);
   } catch (...) {
     // XXX TODO more specific
+  }
+}
+
+// XXX TODO perhaps useful to persist this into the database?
+void Controller::operator()(Event<PositionUpdate> const &event) {
+  log::info<1>("event={}"sv, event);
+  auto &[message_info, position_update] = event;
+  log::debug("position_update={}"sv, position_update);
+  auto &account = shared_.accounts_by_source[message_info.source][position_update.account];
+  auto &position = account.positions[position_update.exchange][position_update.symbol];
+  if (position(position_update)) {
+    // XXX TODO notify subscribers
+  }
+}
+
+// XXX TODO perhaps useful to persist this into the database?
+void Controller::operator()(Event<FundsUpdate> const &event) {
+  log::info<1>("event={}"sv, event);
+  auto &[message_info, funds_update] = event;
+  log::debug("funds_update={}"sv, funds_update);
+  auto &account = shared_.accounts_by_source[message_info.source][funds_update.account];
+  auto &funds = account.funds[funds_update.currency];
+  if (funds(funds_update)) {
+    // XXX TODO notify subscribers
   }
 }
 

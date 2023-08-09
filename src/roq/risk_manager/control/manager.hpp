@@ -15,6 +15,7 @@
 #include "roq/io/net/tcp/listener.hpp"
 
 #include "roq/risk_manager/settings.hpp"
+#include "roq/risk_manager/shared.hpp"
 
 #include "roq/risk_manager/database/session.hpp"
 
@@ -28,7 +29,7 @@ namespace control {
 struct Manager final : public Session::Handler, public io::net::tcp::Listener::Handler {
   struct Handler {};
 
-  Manager(Handler &, Settings const &, io::Context &, database::Session &);
+  Manager(Handler &, Settings const &, io::Context &, risk_manager::Shared const &, database::Session &);
 
   Manager(Manager &&) = delete;
   Manager(Manager const &) = delete;
@@ -50,6 +51,7 @@ struct Manager final : public Session::Handler, public io::net::tcp::Listener::H
   std::unique_ptr<io::net::tcp::Listener> listener_;
   // shared
   Shared shared_;
+  risk_manager::Shared const &shared_2_;
   database::Session &database_;
   // sessions
   uint64_t next_session_id_ = {};

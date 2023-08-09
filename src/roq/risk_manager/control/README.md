@@ -15,8 +15,8 @@
 * (array)
 
   * `name` (string)
-  * `create_time_utc_min` (timestamp, ns)
-  * `create_time_utc_max` (timestamp, ns)
+  * `exchange_time_utc_min` (timestamp, ns)
+  * `exchange_time_utc_max` (timestamp, ns)
   * `trade_count` (integer)
 
 Example
@@ -24,8 +24,8 @@ Example
 ```json
 [{
   "name": "A1",
-  "create_time_utc_min": 123,
-  "create_time_utc_max": 123,
+  "exchange_time_utc_min": 123,
+  "exchange_time_utc_max": 123,
   "trade_count": 123
 }
 ]
@@ -53,7 +53,7 @@ Example
   * `symbol` (string)
   * `long_quantity` (number)
   * `short_quantity` (number)
-  * `create_time_utc` (timestamp, ns)
+  * `exchange_time_utc` (timestamp, ns)
 
 Example
 
@@ -82,7 +82,7 @@ Example
   * `side` (string)
   * `quantity` (number)
   * `price` (number)
-  * `create_time_utc` (timestamp, ns)
+  * `exchange_time_utc` (timestamp, ns)
   * `external_account` (string)
   * `external_order_id` (string)
   * `external_trade_id` (string)
@@ -140,3 +140,30 @@ Example
 ### WS
 
 > TODO
+
+### Get Funds
+
+#### Result
+
+* (array)
+
+  * `account` (string)
+  * `currency` (string)
+  * `balance` (number)
+  * `hold` (number)
+  * `exchange_time_utc` (timestamp, ns)
+  * `external_account` (string)
+
+Example
+
+> TODO
+
+#### HTTP
+
+`GET /funds[?[account=(string)],[currency=(string)]`
+
+### WS
+
+> TODO
+
+

@@ -57,9 +57,10 @@ Session::Session(
     uint64_t session_id,
     io::net::tcp::Connection::Factory &factory,
     Shared &shared,
+    risk_manager::Shared const &shared_2,
     database::Session &database)
     : handler_{handler}, session_id_{session_id}, server_{web::rest::ServerFactory::create(*this, factory)},
-      shared_{shared}, database_{database} {
+      shared_{shared}, shared_2_{shared_2}, database_{database} {
 }
 
 void Session::close() {
@@ -116,6 +117,9 @@ void Session::route(
       } else if (path[0] == "trades"sv) {
         if (std::size(path) == 1)
           get_trades(response, request);
+      } else if (path[0] == "funds"sv) {
+        if (std::size(path) == 1)
+          get_funds(response, request);
       }
       break;
     case HEAD:
@@ -155,8 +159,8 @@ void Session::get_accounts(Response &response, web::rest::Server::Request const 
         std::back_inserter(result),
         R"({{)"
         R"("name":{},)"
-        R"("create_time_utc_min":{},)"
-        R"("create_time_utc_max":{},)"
+        R"("exchange_time_utc_min":{},)"
+        R"("exchange_time_utc_max":{},)"
         R"("trade_count":{})"
         R"(}})"sv,
         json::String{account.name},
@@ -189,7 +193,7 @@ void Session::get_positions(Response &response, web::rest::Server::Request const
         R"("symbol":{},)"
         R"("long_quantity":{},)"
         R"("short_quantity":{},)"
-        R"("create_time_utc":{})"
+        R"("exchange_time_utc":{})"
         R"(}})"sv,
         json::String{position.user},
         position.strategy_id,
@@ -235,7 +239,7 @@ void Session::get_trades(Response &response, web::rest::Server::Request const &r
         R"("side":{},)"
         R"("quantity":{},)"
         R"("price":{},)"
-        R"("create_time_utc":{},)"
+        R"("exchange_time_utc":{},)"
         R"("external_account":{},)"
         R"("external_order_id":{},)"
         R"("external_trade_id":{})"
@@ -254,6 +258,59 @@ void Session::get_trades(Response &response, web::rest::Server::Request const &r
         json::String{trade.external_trade_id});
   };
   database_(callback, account, start_time);
+  if (std::empty(result)) {
+    response(web::http::Status::NOT_FOUND, web::http::ContentType::APPLICATION_JSON, "[]"sv);
+  } else {
+    response(web::http::Status::OK, web::http::ContentType::APPLICATION_JSON, "[{}]"sv, result);
+  }
+}
+
+void Session::get_funds(Response &response, web::rest::Server::Request const &request) {
+  std::string_view account, currency;
+  for (auto &[key, value] : request.query) {
+    log::debug("key={}, value={}"sv, key, value);
+    if (key == "account"sv)
+      account = value;
+    else if (key == "currency"sv)
+      currency = value;
+    else
+      throw RuntimeError{R"(Unexpected: query key="{}" not supported)"sv, key};
+  }
+  std::string result;  // XXX TODO shared encode buffer
+  auto filter = [&](auto &account_2, auto &currency_2) -> bool {
+    auto result = false;
+    if (!std::empty(account) && account != account_2)
+      result = true;
+    if (!std::empty(currency) && currency != currency_2)
+      result = true;
+    log::debug(R"(account="{}", currency="{}", result={})"sv, account_2, currency_2, result);
+    return result;
+  };
+  auto callback = [&](auto &account, auto &currency, auto &funds) {
+    if (!std::empty(result))
+      fmt::format_to(std::back_inserter(result), ","sv);
+    fmt::format_to(
+        std::back_inserter(result),
+        R"({{)"
+        R"("account":{},)"
+        R"("currency":{},)"
+        R"("balance":{},)"
+        R"("hold":{},)"
+        R"("exchange_time_utc":{},)"
+        R"("external_account":{})"
+        R"(}})"sv,
+        json::String{account},
+        json::String{currency},
+        json::Number{funds.balance},  // XXX TODO precision
+        json::Number{funds.hold},     // XXX TODO precision
+        funds.exchange_time_utc.count(),
+        json::String{funds.external_account});
+  };
+  for (auto &[source, accounts] : shared_2_.accounts_by_source)
+    for (auto &[account_2, account_3] : accounts)
+      for (auto &[currency_2, funds] : account_3.funds)
+        if (!filter(account_2, currency_2))
+          callback(account_2, currency_2, funds);
   if (std::empty(result)) {
     response(web::http::Status::NOT_FOUND, web::http::ContentType::APPLICATION_JSON, "[]"sv);
   } else {
@@ -290,7 +347,7 @@ void Session::put_trade(Response &response, web::rest::Server::Request const &re
         correction.quantity = value.template get<double>();
       else if (key == "price"sv)
         correction.price = value.template get<double>();
-      else if (key == "create_time_utc"sv) {
+      else if (key == "create_time_utc"sv || key == "exchange_time_utc"sv) {
         // XXX TODO
         // correction.create_time_utc = value.template get<std::string_view>();
       } else if (key == "reason"sv)

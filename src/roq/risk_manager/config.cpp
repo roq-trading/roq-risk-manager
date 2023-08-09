@@ -172,6 +172,12 @@ void Config::dispatch(Handler &handler) const {
       };
       handler(symbol);
     }
+  // currencies
+  auto currency = client::Symbol{
+      .regex = ".*",
+      .exchange = {},
+  };
+  handler(currency);
 }
 
 }  // namespace risk_manager

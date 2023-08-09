@@ -6,6 +6,9 @@
 
 #include "roq/client.hpp"
 
+#include "roq/cache/funds.hpp"
+#include "roq/cache/position.hpp"
+
 #include "roq/risk_manager/config.hpp"
 #include "roq/risk_manager/settings.hpp"
 
@@ -139,6 +142,16 @@ struct Shared final : public risk::Account::Handler, public risk::User::Handler 
       absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, risk::Limit>>> const limits_by_user_;
   absl::flat_hash_map<std::string, absl::flat_hash_set<uint32_t>> publish_by_account_;
   absl::flat_hash_map<std::string, absl::flat_hash_set<uint32_t>> publish_by_user_;
+
+ public:
+  struct Account final {
+    // exchange -> symbol -> position
+    absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, cache::Position>> positions;
+    // currency -> funds
+    absl::flat_hash_map<std::string, cache::Funds> funds;
+  };
+  // source -> account -> account
+  absl::flat_hash_map<uint8_t, absl::flat_hash_map<std::string, Account>> accounts_by_source;
 };
 
 }  // namespace risk_manager

@@ -8,6 +8,8 @@
 
 #include "roq/web/rest/server.hpp"
 
+#include "roq/risk_manager/shared.hpp"
+
 #include "roq/risk_manager/database/session.hpp"
 
 #include "roq/risk_manager/control/response.hpp"
@@ -26,7 +28,13 @@ struct Session final : public web::rest::Server::Handler {
     virtual void operator()(Disconnected const &) = 0;
   };
 
-  Session(Handler &, uint64_t session_id, io::net::tcp::Connection::Factory &, Shared &, database::Session &);
+  Session(
+      Handler &,
+      uint64_t session_id,
+      io::net::tcp::Connection::Factory &,
+      Shared &,
+      risk_manager::Shared const &,
+      database::Session &);
 
  protected:
   void close();
@@ -42,6 +50,7 @@ struct Session final : public web::rest::Server::Handler {
   void get_accounts(Response &, web::rest::Server::Request const &);
   void get_positions(Response &, web::rest::Server::Request const &);
   void get_trades(Response &, web::rest::Server::Request const &);
+  void get_funds(Response &, web::rest::Server::Request const &);
 
   void put_trade(Response &, web::rest::Server::Request const &);
   void put_compress(Response &, web::rest::Server::Request const &);
@@ -51,6 +60,7 @@ struct Session final : public web::rest::Server::Handler {
   uint64_t const session_id_;
   std::unique_ptr<web::rest::Server> server_;
   Shared shared_;
+  risk_manager::Shared const &shared_2_;
   database::Session &database_;
 };
 

@@ -37,6 +37,8 @@ struct Controller final : public client::Handler, public control::Manager::Handl
   void operator()(Event<Ready> const &) override;
   void operator()(Event<ReferenceData> const &) override;
   void operator()(Event<TradeUpdate> const &) override;
+  void operator()(Event<PositionUpdate> const &) override;
+  void operator()(Event<FundsUpdate> const &) override;
 
   // control::Manager::Handler
   // note! empty
