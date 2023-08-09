@@ -23,7 +23,7 @@ struct Correction final {
   Side side = {};
   double quantity = NaN;
   double price = NaN;
-  std::chrono::nanoseconds create_time_utc = {};  // note! missing means "now"
+  std::chrono::nanoseconds exchange_time_utc = {};  // note! missing means "now"
   // note! following might be useful for reconciliation purposes
   std::string_view reason;
 };
@@ -52,7 +52,7 @@ struct fmt::formatter<roq::risk_manager::database::Correction> {
         R"(side={}, )"
         R"(quantity={}, )"
         R"(price={}, )"
-        R"(create_time_utc={}, )"
+        R"(exchange_time_utc={}, )"
         R"(reason="{}")"
         R"(}})"_cf,
         value.user,
@@ -63,7 +63,7 @@ struct fmt::formatter<roq::risk_manager::database::Correction> {
         value.side,
         value.quantity,
         value.price,
-        value.create_time_utc,
+        value.exchange_time_utc,
         value.reason);
   }
 };

@@ -36,7 +36,7 @@ struct Trades final {
 
   // maintenance
 
-  static void compress(third_party::sqlite::Connection &, std::chrono::nanoseconds create_time_utc);
+  static void compress(third_party::sqlite::Connection &, std::chrono::nanoseconds exchange_time_utc);
 };
 
 }  // namespace sqlite

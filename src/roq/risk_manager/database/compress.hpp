@@ -13,7 +13,7 @@ namespace risk_manager {
 namespace database {
 
 struct Compress final {
-  std::chrono::nanoseconds create_time_utc = {};  // note! missing means "all"
+  std::chrono::nanoseconds exchange_time_utc = {};  // note! missing means "all"
 };
 
 }  // namespace database
@@ -32,8 +32,8 @@ struct fmt::formatter<roq::risk_manager::database::Compress> {
     return fmt::format_to(
         context.out(),
         R"({{)"
-        R"(create_time_utc={})"
+        R"(exchange_time_utc={})"
         R"(}})"_cf,
-        value.create_time_utc);
+        value.exchange_time_utc);
   }
 };

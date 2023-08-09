@@ -126,7 +126,7 @@ void Controller::operator()(Event<TradeUpdate> const &event) {
           .side = trade_update.side,
           .quantity = item.quantity,
           .price = item.price,
-          .create_time_utc = trade_update.create_time_utc,
+          .exchange_time_utc = trade_update.create_time_utc,
           .external_account = trade_update.external_account,
           .external_order_id = trade_update.external_order_id,
           .external_trade_id = item.external_trade_id,
@@ -145,6 +145,8 @@ void Controller::operator()(Event<PositionUpdate> const &event) {
   log::info<1>("event={}"sv, event);
   auto &[message_info, position_update] = event;
   log::debug("position_update={}"sv, position_update);
+  // database
+  // cache
   auto &account = shared_.accounts_by_source[message_info.source][position_update.account];
   auto &position = account.positions[position_update.exchange][position_update.symbol];
   if (position(position_update)) {
@@ -157,6 +159,19 @@ void Controller::operator()(Event<FundsUpdate> const &event) {
   log::info<1>("event={}"sv, event);
   auto &[message_info, funds_update] = event;
   log::debug("funds_update={}"sv, funds_update);
+  // database
+  {
+    auto funds = database::Funds{
+        .account = funds_update.account,
+        .currency = funds_update.currency,
+        .balance = funds_update.balance,
+        .hold = funds_update.hold,
+        .exchange_time_utc = funds_update.exchange_time_utc,
+        .external_account = funds_update.external_account,
+    };
+    (*database_)({&funds, 1});
+  }
+  // cache
   auto &account = shared_.accounts_by_source[message_info.source][funds_update.account];
   auto &funds = account.funds[funds_update.currency];
   if (funds(funds_update)) {
@@ -251,7 +266,7 @@ void Controller::load_positions() {
                    &shared = shared_](database::Position const &position) {
     auto callback = [&](auto &item) { item(position); };
     log::debug("position={}"sv, position);
-    last_exchange_time_utc = std::max(last_exchange_time_utc, position.create_time_utc);
+    last_exchange_time_utc = std::max(last_exchange_time_utc, position.exchange_time_utc);
     if (!std::empty(position.user)) {
       assert(std::empty(position.account));
       shared.get_user(position.user, callback);

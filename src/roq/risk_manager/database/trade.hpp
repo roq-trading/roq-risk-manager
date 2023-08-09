@@ -24,7 +24,7 @@ struct Trade final {
   Side side = {};
   double quantity = NaN;
   double price = NaN;
-  std::chrono::nanoseconds create_time_utc = {};
+  std::chrono::nanoseconds exchange_time_utc = {};
   // note! following might be useful for reconciliation purposes
   std::string_view external_account;
   std::string_view external_order_id;
@@ -55,7 +55,7 @@ struct fmt::formatter<roq::risk_manager::database::Trade> {
         R"(side={}, )"
         R"(quantity={}, )"
         R"(price={}, )"
-        R"(create_time_utc={}, )"
+        R"(exchange_time_utc={}, )"
         R"(external_account="{}", )"
         R"(external_order_id="{}", )"
         R"(external_trade_id="{}")"
@@ -68,7 +68,7 @@ struct fmt::formatter<roq::risk_manager::database::Trade> {
         value.side,
         value.quantity,
         value.price,
-        value.create_time_utc,
+        value.exchange_time_utc,
         value.external_account,
         value.external_order_id,
         value.external_trade_id);

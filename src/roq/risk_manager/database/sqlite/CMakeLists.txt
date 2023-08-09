@@ -1,6 +1,6 @@
 set(TARGET_NAME ${PROJECT_NAME}-database-sqlite)
 
-set(SOURCES session.cpp trades.cpp)
+set(SOURCES funds.cpp session.cpp trades.cpp)
 
 add_library(${TARGET_NAME} OBJECT ${SOURCES})
 

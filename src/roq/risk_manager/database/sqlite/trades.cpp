@@ -6,6 +6,8 @@
 
 #include "roq/third_party/sqlite/statement.hpp"
 
+#include "roq/risk_manager/database/type.hpp"
+
 using namespace std::literals;
 
 namespace roq {
@@ -22,12 +24,6 @@ auto const TABLE_NAME = "trades"sv;
 // === HELPERS ===
 
 namespace {
-enum class Type {
-  EXCHANGE,
-  MANUAL,
-  POSITION,
-};
-
 auto select_positions_by_user(auto &connection) {
   auto query = fmt::format(
       "SELECT "
@@ -39,16 +35,16 @@ auto select_positions_by_user(auto &connection) {
       "  SUM(COALESCE(t1.quantity, 0.0)) AS long_quantity, "
       "  SUM(COALESCE(t2.quantity, 0.0)) AS short_quantity, "
       "  MAX("
-      "    COALESCE(t1.create_time_utc, 0), "
-      "    COALESCE(t2.create_time_utc, 0) "
-      "  ) AS create_time_utc "
+      "    COALESCE(t1.exchange_time_utc, 0), "
+      "    COALESCE(t2.exchange_time_utc, 0) "
+      "  ) AS exchange_time_utc "
       "FROM ( "
       "  SELECT "
       "    user,"
       "    exchange,"
       "    symbol,"
       "    SUM(quantity) AS quantity, "
-      "    MAX(create_time_utc) AS create_time_utc "
+      "    MAX(exchange_time_utc) AS exchange_time_utc "
       "  FROM {} "
       "  WHERE "
       "    side='BUY' "
@@ -63,7 +59,7 @@ auto select_positions_by_user(auto &connection) {
       "    exchange,"
       "    symbol,"
       "    SUM(quantity) AS quantity, "
-      "    MAX(create_time_utc) AS create_time_utc "
+      "    MAX(exchange_time_utc) AS exchange_time_utc "
       "  FROM {} "
       "  WHERE "
       "    side='SELL'  "
@@ -94,16 +90,16 @@ auto select_positions_by_strategy(auto &connection) {
       "  SUM(COALESCE(t1.quantity, 0.0)) AS long_quantity, "
       "  SUM(COALESCE(t2.quantity, 0.0)) AS short_quantity, "
       "  MAX("
-      "    COALESCE(t1.create_time_utc, 0), "
-      "    COALESCE(t2.create_time_utc, 0) "
-      "  ) AS create_time_utc "
+      "    COALESCE(t1.exchange_time_utc, 0), "
+      "    COALESCE(t2.exchange_time_utc, 0) "
+      "  ) AS exchange_time_utc "
       "FROM ( "
       "  SELECT "
       "    strategy_id,"
       "    exchange,"
       "    symbol,"
       "    SUM(quantity) AS quantity, "
-      "    MAX(create_time_utc) AS create_time_utc "
+      "    MAX(exchange_time_utc) AS exchange_time_utc "
       "  FROM {} "
       "  WHERE "
       "    strategy_id > 0 AND "
@@ -119,7 +115,7 @@ auto select_positions_by_strategy(auto &connection) {
       "    exchange,"
       "    symbol,"
       "    SUM(quantity) AS quantity, "
-      "    MAX(create_time_utc) AS create_time_utc "
+      "    MAX(exchange_time_utc) AS exchange_time_utc "
       "  FROM {} "
       "  WHERE "
       "    strategy_id > 0 AND "
@@ -150,16 +146,16 @@ auto select_positions_by_account(auto &connection) {
       "  SUM(COALESCE(t1.quantity, 0.0)) AS long_quantity, "
       "  SUM(COALESCE(t2.quantity, 0.0)) AS short_quantity, "
       "  MAX("
-      "    COALESCE(t1.create_time_utc, 0), "
-      "    COALESCE(t2.create_time_utc, 0) "
-      "  ) AS create_time_utc "
+      "    COALESCE(t1.exchange_time_utc, 0), "
+      "    COALESCE(t2.exchange_time_utc, 0) "
+      "  ) AS exchange_time_utc "
       "FROM ( "
       "  SELECT "
       "    account,"
       "    exchange,"
       "    symbol,"
       "    SUM(quantity) AS quantity, "
-      "    MAX(create_time_utc) AS create_time_utc "
+      "    MAX(exchange_time_utc) AS exchange_time_utc "
       "  FROM {} "
       "  WHERE side='BUY' "
       "  GROUP BY "
@@ -173,7 +169,7 @@ auto select_positions_by_account(auto &connection) {
       "    exchange,"
       "    symbol,"
       "    SUM(quantity) AS quantity, "
-      "    MAX(create_time_utc) AS create_time_utc "
+      "    MAX(exchange_time_utc) AS exchange_time_utc "
       "  FROM {} "
       "  WHERE "
       "    side='SELL'  "
@@ -210,7 +206,7 @@ void Trades::create(third_party::sqlite::Connection &connection) {
       "  side TEXT NOT NULL, "
       "  quantity REAL NOT NULL, "
       "  price REAL NOT NULL, "
-      "  create_time_utc INTEGER NOT NULL, "
+      "  exchange_time_utc INTEGER NOT NULL, "
       "  external_account TEXT, "
       "  external_order_id TEXT, "
       "  external_trade_id TEXT NOT NULL, "
@@ -222,7 +218,7 @@ void Trades::create(third_party::sqlite::Connection &connection) {
       "    account, "
       "    exchange, "
       "    symbol, "
-      "    create_time_utc, "
+      "    exchange_time_utc, "
       "    external_trade_id, "
       "    type "
       "  )"
@@ -250,7 +246,7 @@ void Trades::create(third_party::sqlite::Connection &connection) {
   create_index("exchange"sv);
   create_index("symbol"sv);
   create_index("side"sv);
-  create_index("create_time_utc"sv, true);
+  create_index("exchange_time_utc"sv, true);
   create_index("type"sv);
 }
 
@@ -260,8 +256,8 @@ void Trades::select(third_party::sqlite::Connection &connection, std::function<v
   auto query = fmt::format(
       "SELECT "
       "  DISTINCT(account) AS account, "
-      "  MIN(create_time_utc) AS create_time_utc_min, "
-      "  MAX(create_time_utc) AS create_time_utc_max, "
+      "  MIN(exchange_time_utc) AS exchange_time_utc, "
+      "  MAX(exchange_time_utc) AS exchange_time_utc, "
       "  COUNT(external_trade_id) AS trade_count "
       "FROM {} "
       "GROUP BY "
@@ -273,13 +269,13 @@ void Trades::select(third_party::sqlite::Connection &connection, std::function<v
   auto statement = third_party::sqlite::Statement{connection, query};
   while (statement.step()) {
     auto name = statement.template get<std::string>(0);
-    auto create_time_utc_min = statement.template get<int64_t>(1);
-    auto create_time_utc_max = statement.template get<int64_t>(2);
+    auto exchange_time_utc_min = statement.template get<int64_t>(1);
+    auto exchange_time_utc_max = statement.template get<int64_t>(2);
     auto trade_count = statement.template get<uint64_t>(3);
     auto account = Account{
         .name = name,
-        .create_time_utc_min = std::chrono::nanoseconds{create_time_utc_min},
-        .create_time_utc_max = std::chrono::nanoseconds{create_time_utc_max},
+        .exchange_time_utc_min = std::chrono::nanoseconds{exchange_time_utc_min},
+        .exchange_time_utc_max = std::chrono::nanoseconds{exchange_time_utc_max},
         .trade_count = trade_count,
     };
     log::debug("account={}"sv, account);
@@ -298,7 +294,7 @@ void Trades::select(
       auto symbol = statement.template get<std::string>(4);
       auto long_quantity = statement.template get<double>(5);
       auto short_quantity = statement.template get<double>(6);
-      auto create_time_utc = statement.template get<int64_t>(7);
+      auto exchange_time_utc = statement.template get<int64_t>(7);
       auto position = Position{
           .user = user,
           .strategy_id = strategy_id,
@@ -307,7 +303,7 @@ void Trades::select(
           .symbol = symbol,
           .long_quantity = long_quantity,
           .short_quantity = short_quantity,
-          .create_time_utc = std::chrono::nanoseconds{create_time_utc},
+          .exchange_time_utc = std::chrono::nanoseconds{exchange_time_utc},
       };
       callback(position);
     }
@@ -332,7 +328,7 @@ void Trades::select(
       "  side, "
       "  quantity, "
       "  price, "
-      "  create_time_utc, "
+      "  exchange_time_utc, "
       "  external_account, "
       "  external_order_id, "
       "  external_trade_id "
@@ -345,13 +341,13 @@ void Trades::select(
     if (!std::empty(account) && start_time.count())
       fmt::format_to(std::back_inserter(query), " AND "sv);
     if (start_time.count())
-      fmt::format_to(std::back_inserter(query), " create_time_utc>={} "sv, start_time.count());
+      fmt::format_to(std::back_inserter(query), " exchange_time_utc>={} "sv, start_time.count());
   }
   fmt::format_to(
       std::back_inserter(query),
       " ORDER BY "
       "  account, "
-      "  create_time_utc"sv);
+      "  exchange_time_utc"sv);
   log::debug(R"(query="{}")"sv, query);
   auto statement = third_party::sqlite::Statement{connection, query};
   while (statement.step()) {
@@ -363,7 +359,7 @@ void Trades::select(
     auto side = statement.template get<std::string>(5);
     auto quantity = statement.template get<double>(6);
     auto price = statement.template get<double>(7);
-    auto create_time_utc = statement.template get<int64_t>(8);
+    auto exchange_time_utc = statement.template get<int64_t>(8);
     auto external_account = statement.template get<std::string>(9);
     auto external_order_id = statement.template get<std::string>(10);
     auto external_trade_id = statement.template get<std::string>(11);
@@ -376,7 +372,7 @@ void Trades::select(
         .side = magic_enum::enum_cast<Side>(side).value(),  // XXX TODO exception handling
         .quantity = quantity,
         .price = price,
-        .create_time_utc = std::chrono::nanoseconds{create_time_utc},
+        .exchange_time_utc = std::chrono::nanoseconds{exchange_time_utc},
         .external_account = external_account,
         .external_order_id = external_order_id,
         .external_trade_id = external_trade_id,
@@ -390,24 +386,24 @@ void Trades::select(
 
 void Trades::insert(third_party::sqlite::Connection &connection, std::span<Trade const> const &trades) {
   // XXX TODO use prepared statement
-  auto insert_or_replace = [&](auto &trade) {
+  auto insert_or_replace = [&](auto &item) {
     auto query = fmt::format(
         "INSERT OR REPLACE "
         "INTO {} "
         "VALUES ('{}',{},'{}','{}','{}','{}',{},{},{},'{}','{}','{}','','{}')"sv,
         TABLE_NAME,
-        trade.user,
-        trade.strategy_id,
-        trade.account,
-        trade.exchange,
-        trade.symbol,
-        trade.side,
-        trade.quantity,
-        trade.price,
-        trade.create_time_utc.count(),
-        trade.external_account,
-        trade.external_order_id,
-        trade.external_trade_id,
+        item.user,
+        item.strategy_id,
+        item.account,
+        item.exchange,
+        item.symbol,
+        item.side,
+        item.quantity,
+        item.price,
+        item.exchange_time_utc.count(),
+        item.external_account,
+        item.external_order_id,
+        item.external_trade_id,
         magic_enum::enum_name(Type::EXCHANGE));
     log::debug(R"(query="{}")"sv, query);
     auto statement = third_party::sqlite::Statement{connection, query};
@@ -420,24 +416,24 @@ void Trades::insert(third_party::sqlite::Connection &connection, std::span<Trade
 void Trades::insert(third_party::sqlite::Connection &connection, std::span<Correction const> const &corrections) {
   auto now = clock::get_realtime();
   // XXX TODO use prepared statement
-  auto insert_or_replace = [&](auto &correction) {
-    auto create_time_utc = correction.create_time_utc.count() ? correction.create_time_utc : now;
+  auto insert_or_replace = [&](auto &item) {
+    auto exchange_time_utc = item.exchange_time_utc.count() ? item.exchange_time_utc : now;
     // XXX TODO external_trade_id is a primary key -- should maybe require something unique?
     auto query = fmt::format(
         "INSERT OR REPLACE "
         "INTO {} "
         "VALUES ('{}',{},'{}','{}','{}','{}',{},{},{},'','','','{}','{}')"sv,
         TABLE_NAME,
-        correction.user,
-        correction.strategy_id,
-        correction.account,
-        correction.exchange,
-        correction.symbol,
-        correction.side,
-        correction.quantity,
-        correction.price,
-        correction.create_time_utc.count(),
-        correction.reason,
+        item.user,
+        item.strategy_id,
+        item.account,
+        item.exchange,
+        item.symbol,
+        item.side,
+        item.quantity,
+        item.price,
+        exchange_time_utc.count(),
+        item.reason,
         magic_enum::enum_name(Type::MANUAL));
     log::debug(R"(query="{}")"sv, query);
     auto statement = third_party::sqlite::Statement{connection, query};
@@ -449,8 +445,8 @@ void Trades::insert(third_party::sqlite::Connection &connection, std::span<Corre
 
 // maintenance
 
-void Trades::compress(third_party::sqlite::Connection &, std::chrono::nanoseconds create_time_utc) {
-  // XXX TODO accumulate all "trades" prior to create_time_utc and create positions (remember group-by)
+void Trades::compress(third_party::sqlite::Connection &, std::chrono::nanoseconds exchange_time_utc) {
+  // XXX TODO accumulate all "trades" prior to exchange_time_utc and create positions (remember group-by)
 }
 
 }  // namespace sqlite

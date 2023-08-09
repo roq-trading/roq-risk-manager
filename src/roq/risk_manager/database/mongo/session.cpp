@@ -47,6 +47,13 @@ void Session::operator()(
   // XXX TODO
 }
 
+void Session::operator()(
+    std::function<void(Funds const &)> const &callback,
+    std::string_view const &account,
+    std::string_view const &currency) {
+  // XXX TODO
+}
+
 // insert
 
 void Session::operator()(std::span<Trade const> const &trades) {
@@ -56,6 +63,12 @@ void Session::operator()(std::span<Trade const> const &trades) {
 void Session::operator()(std::span<Correction const> const &corrections) {
   // XXX TODO
 }
+
+void Session::operator()(std::span<Funds const> const &funds) {
+  // XXX TODO
+}
+
+// maintenance
 
 void Session::operator()(Compress const &compress) {
   // XXX TODO

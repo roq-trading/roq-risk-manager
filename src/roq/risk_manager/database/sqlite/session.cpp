@@ -2,6 +2,7 @@
 
 #include "roq/risk_manager/database/sqlite/session.hpp"
 
+#include "roq/risk_manager/database/sqlite/funds.hpp"
 #include "roq/risk_manager/database/sqlite/trades.hpp"
 
 using namespace std::literals;
@@ -23,6 +24,7 @@ auto create_connection(auto &params) {
 
 Session::Session(std::string_view const &params) : connection_{create_connection(params)} {
   Trades::create(*connection_);
+  Funds::create(*connection_);
 }
 
 // query
@@ -42,6 +44,13 @@ void Session::operator()(
   Trades::select(*connection_, callback, account, start_time);
 }
 
+void Session::operator()(
+    std::function<void(database::Funds const &)> const &callback,
+    std::string_view const &account,
+    std::string_view const &currency) {
+  Funds::select(*connection_, callback, account, currency);
+}
+
 // insert
 
 void Session::operator()(std::span<Trade const> const &trades) {
@@ -52,8 +61,14 @@ void Session::operator()(std::span<Correction const> const &corrections) {
   Trades::insert(*connection_, corrections);
 }
 
+void Session::operator()(std::span<database::Funds const> const &funds) {
+  Funds::insert(*connection_, funds);
+}
+
+// maintenance
+
 void Session::operator()(Compress const &compress) {
-  Trades::compress(*connection_, compress.create_time_utc);
+  Trades::compress(*connection_, compress.exchange_time_utc);
 }
 
 }  // namespace sqlite

@@ -15,8 +15,8 @@ namespace database {
 
 struct Account final {
   std::string_view name;
-  std::chrono::nanoseconds create_time_utc_min = {};
-  std::chrono::nanoseconds create_time_utc_max = {};
+  std::chrono::nanoseconds exchange_time_utc_min = {};
+  std::chrono::nanoseconds exchange_time_utc_max = {};
   uint64_t trade_count = {};
 };
 
@@ -37,13 +37,13 @@ struct fmt::formatter<roq::risk_manager::database::Account> {
         context.out(),
         R"({{)"
         R"(account="{}", )"
-        R"(create_time_utc_min={}, )"
-        R"(create_time_utc_max={}, )"
+        R"(exchange_time_utc_min={}, )"
+        R"(exchange_time_utc_max={}, )"
         R"(trade_count={})"
         R"(}})"_cf,
         value.name,
-        value.create_time_utc_min,
-        value.create_time_utc_max,
+        value.exchange_time_utc_min,
+        value.exchange_time_utc_max,
         value.trade_count);
   }
 };

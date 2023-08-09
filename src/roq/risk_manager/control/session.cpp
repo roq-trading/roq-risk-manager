@@ -164,8 +164,8 @@ void Session::get_accounts(Response &response, web::rest::Server::Request const 
         R"("trade_count":{})"
         R"(}})"sv,
         json::String{account.name},
-        account.create_time_utc_min.count(),
-        account.create_time_utc_max.count(),
+        account.exchange_time_utc_min.count(),
+        account.exchange_time_utc_max.count(),
         account.trade_count);
   };
   database_(callback);
@@ -202,7 +202,7 @@ void Session::get_positions(Response &response, web::rest::Server::Request const
         json::String{position.symbol},
         json::Number{position.long_quantity},   // XXX TODO precision
         json::Number{position.short_quantity},  // XXX TODO precision
-        position.create_time_utc.count());
+        position.exchange_time_utc.count());
   };
   database_(callback);
   if (std::empty(result)) {
@@ -252,7 +252,7 @@ void Session::get_trades(Response &response, web::rest::Server::Request const &r
         json::String{trade.side},
         json::Number{trade.quantity},  // XXX TODO precision
         json::Number{trade.price},     // XXX TODO precision
-        trade.create_time_utc.count(),
+        trade.exchange_time_utc.count(),
         json::String{trade.external_account},
         json::String{trade.external_order_id},
         json::String{trade.external_trade_id});
@@ -277,16 +277,7 @@ void Session::get_funds(Response &response, web::rest::Server::Request const &re
       throw RuntimeError{R"(Unexpected: query key="{}" not supported)"sv, key};
   }
   std::string result;  // XXX TODO shared encode buffer
-  auto filter = [&](auto &account_2, auto &currency_2) -> bool {
-    auto result = false;
-    if (!std::empty(account) && account != account_2)
-      result = true;
-    if (!std::empty(currency) && currency != currency_2)
-      result = true;
-    log::debug(R"(account="{}", currency="{}", result={})"sv, account_2, currency_2, result);
-    return result;
-  };
-  auto callback = [&](auto &account, auto &currency, auto &funds) {
+  auto callback = [&](database::Funds const &funds) {
     if (!std::empty(result))
       fmt::format_to(std::back_inserter(result), ","sv);
     fmt::format_to(
@@ -299,18 +290,14 @@ void Session::get_funds(Response &response, web::rest::Server::Request const &re
         R"("exchange_time_utc":{},)"
         R"("external_account":{})"
         R"(}})"sv,
-        json::String{account},
-        json::String{currency},
+        json::String{funds.account},
+        json::String{funds.currency},
         json::Number{funds.balance},  // XXX TODO precision
         json::Number{funds.hold},     // XXX TODO precision
         funds.exchange_time_utc.count(),
         json::String{funds.external_account});
   };
-  for (auto &[source, accounts] : shared_2_.accounts_by_source)
-    for (auto &[account_2, account_3] : accounts)
-      for (auto &[currency_2, funds] : account_3.funds)
-        if (!filter(account_2, currency_2))
-          callback(account_2, currency_2, funds);
+  database_(callback, account, currency);
   if (std::empty(result)) {
     response(web::http::Status::NOT_FOUND, web::http::ContentType::APPLICATION_JSON, "[]"sv);
   } else {
@@ -347,9 +334,9 @@ void Session::put_trade(Response &response, web::rest::Server::Request const &re
         correction.quantity = value.template get<double>();
       else if (key == "price"sv)
         correction.price = value.template get<double>();
-      else if (key == "create_time_utc"sv || key == "exchange_time_utc"sv) {
+      else if (key == "exchange_time_utc"sv || key == "exchange_time_utc"sv) {
         // XXX TODO
-        // correction.create_time_utc = value.template get<std::string_view>();
+        // correction.exchange_time_utc = value.template get<std::string_view>();
       } else if (key == "reason"sv)
         correction.reason = value.template get<std::string_view>();
       else
@@ -391,9 +378,9 @@ void Session::put_compress(Response &response, web::rest::Server::Request const 
   }
   if (std::empty(end_time_as_string))
     throw RuntimeError{R"(Unexpected: no timestamp)"sv};
-  auto create_time_utc = convert_to_timestamp<std::chrono::nanoseconds>(end_time_as_string);
+  auto exchange_time_utc = convert_to_timestamp<std::chrono::nanoseconds>(end_time_as_string);
   auto compress = database::Compress{
-      .create_time_utc = create_time_utc,
+      .exchange_time_utc = exchange_time_utc,
   };
   database_(compress);
   response(web::http::Status::OK, web::http::ContentType::APPLICATION_JSON, R"({{"success":{}}})"sv, true);
