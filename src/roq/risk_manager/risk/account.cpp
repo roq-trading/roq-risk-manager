@@ -40,7 +40,7 @@ void Account::dispatch(auto &value, Callback callback) {
   position(value, instrument);
   callback(instrument.id);
   log::debug(
-      R"(account="{}, exchange="{}", symbol="{}", instrument={}, position={})"sv,
+      R"(account="{}", exchange="{}", symbol="{}", instrument={}, position={})"sv,
       name,
       value.exchange,
       value.symbol,

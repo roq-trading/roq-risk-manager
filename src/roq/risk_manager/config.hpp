@@ -35,6 +35,10 @@ struct Config final : public client::Config {
       std::string,
       absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, risk::Limit>>> const users;
 
+  // strategy => exchange => symbol => limit
+  absl::flat_hash_map<uint32_t, absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, risk::Limit>>> const
+      strategies;
+
   template <typename Context>
   auto format_to(Context &context) const {
     using namespace fmt::literals;

@@ -15,12 +15,13 @@
 #include "roq/risk_manager/risk/account.hpp"
 #include "roq/risk_manager/risk/instrument.hpp"
 #include "roq/risk_manager/risk/limit.hpp"
+#include "roq/risk_manager/risk/strategy.hpp"
 #include "roq/risk_manager/risk/user.hpp"
 
 namespace roq {
 namespace risk_manager {
 
-struct Shared final : public risk::Account::Handler, public risk::User::Handler {
+struct Shared final : public risk::Account::Handler, public risk::User::Handler, public risk::Strategy::Handler {
   Shared(Settings const &, Config const &);
 
   risk::Instrument &get_instrument(std::string_view const &exchange, std::string_view const &symbol) override;
@@ -107,6 +108,47 @@ struct Shared final : public risk::Account::Handler, public risk::User::Handler 
     return true;
   }
 
+  // strategies
+
+  template <typename Callback>
+  bool get_strategy(uint32_t strategy_id, Callback callback) {
+    auto iter = strategies_.find(strategy_id);
+    if (iter != std::end(strategies_)) {
+      callback((*iter).second);
+      return true;
+    }
+    return false;
+  }
+
+  template <typename Callback>
+  void get_all_strategys(Callback callback) {
+    for (auto &[_, strategy] : strategies_)
+      callback(strategy);
+  }
+
+  void publish_strategy(uint32_t strategy_id);
+
+  template <typename Callback>
+  bool get_publish_by_strategy(uint32_t strategy_id, Callback callback) {
+    auto iter_1 = publish_by_strategy_.find(strategy_id);
+    if (iter_1 == std::end(publish_by_strategy_))
+      return false;
+    for (auto instrument_id : (*iter_1).second) {
+      auto iter_2 = instruments_.find(instrument_id);
+      if (iter_2 == std::end(instruments_))
+        continue;  // XXX should never happen
+      auto &instrument = (*iter_2).second;
+      auto iter_3 = strategies_.find(strategy_id);
+      if (iter_3 == std::end(strategies_))
+        continue;  // XXX should never happen
+      auto callback_2 = [&](auto &position) { callback(position, instrument); };
+      auto &strategy = (*iter_3).second;
+      strategy.get_position(instrument_id, callback_2);
+    }
+    (*iter_1).second.clear();
+    return true;
+  }
+
  protected:
   uint32_t get_instrument_id(std::string_view const &exchange, std::string_view const &symbol);
 
@@ -128,20 +170,33 @@ struct Shared final : public risk::Account::Handler, public risk::User::Handler 
     publish_by_user_[user].emplace(instrument_id);
   }
 
+  // strategies
+
+  risk::Limit get_limit_by_strategy(
+      uint32_t strategy_id, std::string_view const &exchange, std::string_view const &symbol) const override;
+
+  void publish_strategy(uint32_t strategy_id, uint32_t instrument_id) override {
+    publish_by_strategy_[strategy_id].emplace(instrument_id);
+  }
+
  private:
   uint32_t next_instrument_id_ = {};
   absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, int32_t>> instrument_lookup_;
   absl::flat_hash_map<uint32_t, risk::Instrument> instruments_;
   absl::flat_hash_map<std::string, risk::Account> accounts_;  // note! can't make const
   absl::flat_hash_map<std::string, risk::User> users_;        // note! can't make const
+  absl::flat_hash_map<uint32_t, risk::Strategy> strategies_;  // note! can't make const
   absl::flat_hash_map<
       std::string,
       absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, risk::Limit>>> const limits_by_account_;
   absl::flat_hash_map<
       std::string,
       absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, risk::Limit>>> const limits_by_user_;
+  absl::flat_hash_map<uint32_t, absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, risk::Limit>>> const
+      limits_by_strategy_;
   absl::flat_hash_map<std::string, absl::flat_hash_set<uint32_t>> publish_by_account_;
   absl::flat_hash_map<std::string, absl::flat_hash_set<uint32_t>> publish_by_user_;
+  absl::flat_hash_map<uint32_t, absl::flat_hash_set<uint32_t>> publish_by_strategy_;
 
  public:
   struct Account final {

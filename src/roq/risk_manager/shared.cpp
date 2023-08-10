@@ -40,8 +40,10 @@ auto create_limits(auto &limits) {
 Shared::Shared(Settings const &, Config const &config)
     : accounts_{create_config<decltype(accounts_)>(config.accounts, *this)},
       users_{create_config<decltype(users_)>(config.users, *this)},
+      strategies_{create_config<decltype(strategies_)>(config.strategies, *this)},
       limits_by_account_{create_limits<decltype(limits_by_account_)>(config.accounts)},
-      limits_by_user_{create_limits<decltype(limits_by_user_)>(config.users)} {
+      limits_by_user_{create_limits<decltype(limits_by_user_)>(config.users)},
+      limits_by_strategy_{create_limits<decltype(limits_by_strategy_)>(config.strategies)} {
 }
 
 uint32_t Shared::get_instrument_id(std::string_view const &exchange, std::string_view const &symbol) {
@@ -106,6 +108,31 @@ risk::Limit Shared::get_limit_by_user(
 
 void Shared::publish_user(std::string_view const &user) {
   auto &tmp = publish_by_user_[user];
+  for (auto &[instrument_id, _] : instruments_)
+    tmp.emplace(instrument_id);
+}
+
+// strategies
+
+// note! lookup is rare -- no need to optimize
+risk::Limit Shared::get_limit_by_strategy(
+    uint32_t strategy_id, std::string_view const &exchange, std::string_view const &symbol) const {
+  auto iter_1 = limits_by_strategy_.find(strategy_id);
+  if (iter_1 == std::end(limits_by_strategy_))
+    return {};
+  auto &tmp_1 = (*iter_1).second;
+  auto iter_2 = tmp_1.find(exchange);
+  if (iter_2 == std::end(tmp_1))
+    return {};
+  auto &tmp_2 = (*iter_2).second;
+  auto iter_3 = tmp_2.find(symbol);
+  if (iter_3 == std::end(tmp_2))
+    return {};
+  return (*iter_3).second;
+}
+
+void Shared::publish_strategy(uint32_t strategy_id) {
+  auto &tmp = publish_by_strategy_[strategy_id];
   for (auto &[instrument_id, _] : instruments_)
     tmp.emplace(instrument_id);
 }
