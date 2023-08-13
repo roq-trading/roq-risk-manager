@@ -24,6 +24,9 @@ namespace risk_manager {
 struct Shared final : public risk::Account::Handler, public risk::User::Handler, public risk::Strategy::Handler {
   Shared(Settings const &, Config const &);
 
+  Shared(Shared const &) = delete;
+  Shared(Shared &&) = default;
+
   risk::Instrument &get_instrument(std::string_view const &exchange, std::string_view const &symbol) override;
 
   // accounts

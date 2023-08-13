@@ -61,6 +61,17 @@ void Manager::operator()(Event<Timer> const &event) {
   }
 }
 
+void Manager::operator()(database::Trade const &trade) {
+  if (std::empty(subscribers_))
+    return;
+  // XXX TODO lift json encoding out from Session and do it once here
+  for (auto session_id : subscribers_) {
+    auto iter = sessions_.find(session_id);
+    if (iter != std::end(sessions_))
+      (*(*iter).second)(trade);
+  }
+}
+
 // io::net::tcp::Listener::Handler
 
 void Manager::operator()(io::net::tcp::Connection::Factory &factory) {
@@ -74,6 +85,11 @@ void Manager::operator()(io::net::tcp::Connection::Factory &factory) {
 void Manager::operator()(Session::Disconnected const &disconnected) {
   log::info("Detected zombie session"sv);
   zombies_.emplace(disconnected.session_id);
+  subscribers_.erase(disconnected.session_id);
+}
+
+void Manager::operator()(Session::Upgraded const &upgraded) {
+  subscribers_.emplace(upgraded.session_id);
 }
 
 void Manager::remove_zombies() {

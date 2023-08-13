@@ -36,12 +36,15 @@ struct Manager final : public Session::Handler, public io::net::tcp::Listener::H
 
   void operator()(Event<Timer> const &);
 
+  void operator()(database::Trade const &);
+
  protected:
   // io::net::tcp::Listener::Handler
   void operator()(io::net::tcp::Connection::Factory &) override;
 
   // Session::Handler
   void operator()(Session::Disconnected const &) override;
+  void operator()(Session::Upgraded const &) override;
 
   void remove_zombies();
 
@@ -56,6 +59,7 @@ struct Manager final : public Session::Handler, public io::net::tcp::Listener::H
   // sessions
   uint64_t next_session_id_ = {};
   absl::flat_hash_map<uint64_t, std::unique_ptr<Session>> sessions_;
+  absl::flat_hash_set<uint64_t> subscribers_;
   std::chrono::nanoseconds next_cleanup_ = {};
   absl::flat_hash_set<uint64_t> zombies_;
 };

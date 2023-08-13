@@ -23,6 +23,16 @@ namespace roq {
 namespace risk_manager {
 namespace control {
 
+// === CONSTANTS ===
+
+namespace {
+auto const JSONRPC_VERSION = "2.0"sv;
+
+auto const UNKNOWN_METHOD = "UNKNOWN_METHOD"sv;
+
+auto const SUCCESS = "success"sv;
+}  // namespace
+
 // === HELPERS ===
 
 namespace {
@@ -48,6 +58,38 @@ R convert_to_timestamp(auto &value) {
   }
   return {};
 }
+
+template <typename Context>
+void trade_to_json(Context context, database::Trade const &trade) {
+  fmt::format_to(
+      context,
+      R"({{)"
+      R"("user":{},)"
+      R"("strategy_id":{},)"
+      R"("account":{},)"
+      R"("exchange":{},)"
+      R"("symbol":{},)"
+      R"("side":{},)"
+      R"("quantity":{},)"
+      R"("price":{},)"
+      R"("exchange_time_utc":{},)"
+      R"("external_account":{},)"
+      R"("external_order_id":{},)"
+      R"("external_trade_id":{})"
+      R"(}})"sv,
+      json::String{trade.user},
+      trade.strategy_id,
+      json::String{trade.account},
+      json::String{trade.exchange},
+      json::String{trade.symbol},
+      json::String{trade.side},
+      json::Number{trade.quantity},  // XXX TODO precision
+      json::Number{trade.price},     // XXX TODO precision
+      trade.exchange_time_utc.count(),
+      json::String{trade.external_account},
+      json::String{trade.external_order_id},
+      json::String{trade.external_trade_id});
+}
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -63,6 +105,22 @@ Session::Session(
       shared_{shared}, shared_2_{shared_2}, database_{database} {
 }
 
+void Session::operator()(database::Trade const &trade) {
+  assert(ready());
+  // XXX TODO clean up
+  std::string message;
+  trade_to_json(std::back_inserter(message), trade);
+  send_text("{}"sv, message);
+}
+
+bool Session::ready() const {
+  return state_ == State::READY;
+}
+
+bool Session::zombie() const {
+  return state_ == State::ZOMBIE;
+}
+
 void Session::close() {
   (*server_).close();
 }
@@ -70,6 +128,7 @@ void Session::close() {
 // web::rest::Server::Handler
 
 void Session::operator()(web::rest::Server::Disconnected const &) {
+  state_ = State::ZOMBIE;
   auto disconnected = Disconnected{
       .session_id = session_id_,
   };
@@ -80,12 +139,22 @@ void Session::operator()(web::rest::Server::Request const &request) {
   log::info("DEBUG request={}"sv, request);
   auto success = false;
   try {
-    auto path = request.path;  // note! url path has already been split
-    if (!std::empty(path) && !std::empty(shared_.url_prefix) && path[0] == shared_.url_prefix)
-      path = path.subspan(1);  // drop prefix
-    if (!std::empty(path)) {
-      Response response{*server_, request, shared_.encode_buffer};
-      route(response, request, path);
+    if (request.headers.connection == roq::web::http::Connection::UPGRADE) {
+      roq::log::info("Upgrading session_id={} to websocket..."sv, session_id_);
+      (*server_).upgrade(request);
+      state_ = State::READY;
+      auto upgraded = Upgraded{
+          .session_id = session_id_,
+      };
+      handler_(upgraded);
+    } else {
+      auto path = request.path;  // note! url path has already been split
+      if (!std::empty(path) && !std::empty(shared_.url_prefix) && path[0] == shared_.url_prefix)
+        path = path.subspan(1);  // drop prefix
+      if (!std::empty(path)) {
+        Response response{*server_, request, shared_.encode_buffer};
+        route(response, request, path);
+      }
     }
     success = true;
   } catch (RuntimeError &e) {
@@ -97,7 +166,19 @@ void Session::operator()(web::rest::Server::Request const &request) {
     close();
 }
 
-void Session::operator()(web::rest::Server::Text const &) {
+void Session::operator()(web::rest::Server::Text const &text) {
+  roq::log::info(R"(message="{})"sv, text.payload);
+  auto success = false;
+  try {
+    process(text.payload);
+    success = true;
+  } catch (roq::RuntimeError &e) {
+    roq::log::error("Error: {}"sv, e);
+  } catch (std::exception &e) {
+    roq::log::error("Error: {}"sv, e.what());
+  }
+  if (!success)
+    close();
 }
 
 void Session::operator()(web::rest::Server::Binary const &) {
@@ -228,34 +309,7 @@ void Session::get_trades(Response &response, web::rest::Server::Request const &r
   auto callback = [&](database::Trade const &trade) {
     if (!std::empty(result))
       fmt::format_to(std::back_inserter(result), ","sv);
-    fmt::format_to(
-        std::back_inserter(result),
-        R"({{)"
-        R"("user":{},)"
-        R"("strategy_id":{},)"
-        R"("account":{},)"
-        R"("exchange":{},)"
-        R"("symbol":{},)"
-        R"("side":{},)"
-        R"("quantity":{},)"
-        R"("price":{},)"
-        R"("exchange_time_utc":{},)"
-        R"("external_account":{},)"
-        R"("external_order_id":{},)"
-        R"("external_trade_id":{})"
-        R"(}})"sv,
-        json::String{trade.user},
-        trade.strategy_id,
-        json::String{trade.account},
-        json::String{trade.exchange},
-        json::String{trade.symbol},
-        json::String{trade.side},
-        json::Number{trade.quantity},  // XXX TODO precision
-        json::Number{trade.price},     // XXX TODO precision
-        trade.exchange_time_utc.count(),
-        json::String{trade.external_account},
-        json::String{trade.external_order_id},
-        json::String{trade.external_trade_id});
+    trade_to_json(std::back_inserter(result), trade);
   };
   database_(callback, account, start_time);
   if (std::empty(result)) {
@@ -384,6 +438,87 @@ void Session::put_compress(Response &response, web::rest::Server::Request const 
   };
   database_(compress);
   response(web::http::Status::OK, web::http::ContentType::APPLICATION_JSON, R"({{"success":{}}})"sv, true);
+}
+
+void Session::process(std::string_view const &message) {
+  assert(!zombie());
+  auto success = false;
+  try {
+    auto json = nlohmann::json::parse(message);  // note! not fast... you should consider some other json parser here
+    auto version = json.at("jsonrpc"sv).template get<std::string_view>();
+    if (version != JSONRPC_VERSION)
+      throw roq::RuntimeError{R"(Invalid JSONRPC version ("{}"))"sv, version};
+    auto method = json.at("method"sv).template get<std::string_view>();
+    auto params = json.at("params"sv);
+    auto id = json.at("id"sv);
+    process_jsonrpc(method, params, id);
+    success = true;
+  } catch (roq::RuntimeError &e) {
+    roq::log::error("Error: {}"sv, e);
+  } catch (std::exception &e) {
+    roq::log::error("Error: {}"sv, e.what());
+  }
+  roq::log::debug("success={}"sv, success);
+  if (!success)
+    close();
+}
+
+void Session::process_jsonrpc(
+    [[maybe_unused]] std::string_view const &method, [[maybe_unused]] auto const &params, auto const &id) {
+  send_error(UNKNOWN_METHOD, id);  // XXX TODO define protocol
+}
+
+void Session::send_result(std::string_view const &message, auto const &id) {
+  send_jsonrpc("result"sv, message, id);
+}
+
+void Session::send_error(std::string_view const &message, auto const &id) {
+  send_jsonrpc("error"sv, message, id);
+}
+
+void Session::send_jsonrpc(std::string_view const &type, std::string_view const &message, auto const &id) {
+  assert(!zombie());
+  // note!
+  //   response must echo the id field from the request (same type)
+  auto type_2 = id.type();
+  switch (type_2) {
+    using enum nlohmann::json::value_t;
+    case string:
+      send_text(
+          R"({{)"
+          R"("jsonrpc":"{}",)"
+          R"("{}":"{}",)"
+          R"("id":"{}")"
+          R"(}})"sv,
+          JSONRPC_VERSION,
+          type,
+          message,
+          id.template get<std::string_view>());
+      break;
+    case number_integer:
+    case number_unsigned:
+      send_text(
+          R"({{)"
+          R"("jsonrpc":"{}",)"
+          R"("{}":"{}",)"
+          R"("id":{})"
+          R"(}})"sv,
+          JSONRPC_VERSION,
+          type,
+          message,
+          id.template get<int64_t>());
+      break;
+    default:
+      roq::log::warn("Unexpected: type={}"sv, magic_enum::enum_name(type_2));
+  }
+}
+
+template <typename... Args>
+void Session::send_text(fmt::format_string<Args...> const &fmt, Args &&...args) {
+  shared_.encode_buffer.clear();
+  fmt::format_to(std::back_inserter(shared_.encode_buffer), fmt, std::forward<Args>(args)...);
+  roq::log::debug(R"(message="{}")"sv, shared_.encode_buffer);
+  (*server_).send_text(shared_.encode_buffer);
 }
 
 }  // namespace control

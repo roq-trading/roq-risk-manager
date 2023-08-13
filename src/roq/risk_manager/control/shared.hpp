@@ -14,6 +14,9 @@ namespace control {
 struct Shared final {
   explicit Shared(Settings const &);
 
+  Shared(Shared const &) = delete;
+  Shared(Shared &&) = default;
+
   std::string_view const url_prefix;
 
   std::string encode_buffer;

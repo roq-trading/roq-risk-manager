@@ -111,9 +111,11 @@ void Controller::operator()(Event<TradeUpdate> const &event) {
     return;
   }
   log::debug("trade_update={}"sv, trade_update);
+  // positions
   auto callback = [&](auto &item) { item(trade_update); };
   shared_.get_account(trade_update.account, callback);
   shared_.get_user(trade_update.user, callback);
+  // database
   try {
     trades_buffer_.clear();
     for (auto &item : trade_update.fills) {
@@ -131,8 +133,10 @@ void Controller::operator()(Event<TradeUpdate> const &event) {
           .external_order_id = trade_update.external_order_id,
           .external_trade_id = item.external_trade_id,
       };
+      // subscribers
+      control_manager_(trade);
+      // for database
       trades_buffer_.emplace_back(std::move(trade));
-      // XXX TODO notify subscribers
     }
     (*database_)(trades_buffer_);
   } catch (...) {
