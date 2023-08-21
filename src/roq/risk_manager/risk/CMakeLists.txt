@@ -4,4 +4,8 @@ set(SOURCES account.cpp instrument.cpp position.cpp strategy.cpp user.cpp)
 
 add_library(${TARGET_NAME} OBJECT ${SOURCES})
 
+if(APPLE)
+  target_compile_definitions(${TARGET_NAME} PRIVATE FMT_USE_NONTYPE_TEMPLATE_ARGS=1)
+endif()
+
 target_link_libraries(${TARGET_NAME} PRIVATE fmt::fmt)
