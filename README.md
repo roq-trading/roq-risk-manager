@@ -54,16 +54,16 @@ to be "slow".
 git submodule update --init --recursive
 ```
 
-### Create environment (Mambaforge)
+### Create environment
 
 ```bash
-scripts/create_conda_env.sh stable debug
+scripts/create_conda_env.sh unstable debug
 ```
 
 ### Activate environment
 
 ```bash
-source opt/conda/bin/activate
+source opt/conda/bin/activate dev
 ```
 
 ## Build the project
