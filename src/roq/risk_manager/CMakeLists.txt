@@ -19,8 +19,6 @@ target_link_libraries(
           ${TARGET_NAME}-risk
           ${PROJECT_NAME}-third_party-sqlite
           roq-io::roq-io
-          roq-adapter::roq-adapter
-          roq-adapter::roq-adapter-flags
           roq-client::roq-client
           roq-client::roq-client-flags
           roq-logging::roq-logging
