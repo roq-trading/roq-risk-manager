@@ -29,8 +29,6 @@ namespace {
 auto const JSONRPC_VERSION = "2.0"sv;
 
 auto const UNKNOWN_METHOD = "UNKNOWN_METHOD"sv;
-
-auto const SUCCESS = "success"sv;
 }  // namespace
 
 // === HELPERS ===
