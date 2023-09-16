@@ -1,12 +1,18 @@
 package:
   name: roq-risk-manager
-  version: 1.0
+  version: {{ GIT_DESCRIBE_TAG }}
 
 source:
   git_url: ..
 
 build:
   skip: true  # [not unix]
+  number: {{ ROQ_BUILD_NUMBER if ROQ_BUILD_NUMBER is defined else GIT_DESCRIBE_NUMBER }}                                
+  script_env:                                                                                                           
+    - ROQ_BUILD_NUMBER                                                                                                  
+    - ROQ_BUILD_TYPE                                                                                                    
+  run_exports:                                                                                                          
+    - {{ pin_subpackage('roq-risk-manager', max_pin='x.x.x') }}
 
 requirements:
   build:
@@ -17,13 +23,13 @@ requirements:
     - pkg-config
   host:
     - abseil-cpp
-    - boost-cpp
-    - catch2
+    - catch2  # [linux]
     - nlohmann_json
     - roq-client
     - roq-flags
     - roq-io
     - roq-oss-benchmark
+    - roq-oss-catch2  # [osx]
     - roq-oss-tomlplusplus
     - roq-web
     - sqlite
