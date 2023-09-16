@@ -158,7 +158,7 @@ void Funds::insert(third_party::sqlite::Connection &connection, std::span<databa
 
 // maintenance
 
-void Funds::compress(third_party::sqlite::Connection &, std::chrono::nanoseconds exchange_time_utc) {
+void Funds::compress(third_party::sqlite::Connection &, [[maybe_unused]] std::chrono::nanoseconds exchange_time_utc) {
   // XXX TODO accumulate all "trades" prior to exchange_time_utc and create positions (remember group-by)
 }
 
