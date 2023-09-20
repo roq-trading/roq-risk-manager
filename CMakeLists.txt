@@ -5,30 +5,13 @@ cmake_minimum_required(VERSION 3.12)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_CURRENT_SOURCE_DIR}/scripts/cmake
                       ${CMAKE_MODULE_PATH})
 
+# config
+
+include(RoqConfig)
+
 # project
 
 project(roq-risk-manager)
-
-# conda
-
-if(DEFINED ENV{CONDA_PREFIX} AND NOT DEFINED ENV{CONDA_BUILD})
-  set(CMAKE_INSTALL_PREFIX $ENV{CONDA_PREFIX})
-  set(CMAKE_FIND_ROOT_PATH $ENV{CONDA_PREFIX})
-endif()
-
-# rpath
-
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
-# c++
-
-if(NOT DEFINED CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 20)
-endif()
-
-# filesystem
-
-include(GNUInstallDirs)
 
 # dependencies
 
