@@ -54,6 +54,20 @@ find_program(CLANG_FORMAT clang-format REQUIRED)
 
 pkg_check_modules(SQLITE3 REQUIRED sqlite3)
 
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+  include(CTest)
+endif()
+
+if(BUILD_TESTING)
+  find_package(Catch2 REQUIRED)
+endif()
+
+option(BUILD_BENCHMARK "Enable benchmark" ON)
+
+if(BUILD_BENCHMARK)
+  find_package(benchmark REQUIRED)
+endif()
+
 # include
 
 include_directories(
@@ -70,20 +84,6 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
 if(APPLE)
   add_compile_definitions(FMT_USE_NONTYPE_TEMPLATE_ARGS=1)
 endif()
-
-# test
-
-if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-  include(CTest)
-endif()
-
-add_subdirectory(${CMAKE_SOURCE_DIR}/test)
-
-# benchmark
-
-find_package(benchmark REQUIRED)
-
-add_subdirectory(${CMAKE_SOURCE_DIR}/benchmark)
 
 # config
 
