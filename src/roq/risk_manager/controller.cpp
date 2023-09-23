@@ -87,7 +87,7 @@ void Controller::operator()(Event<Ready> const &event) {
 
 // XXX TODO also use MarketByPrice in case reference data not available...?
 void Controller::operator()(Event<ReferenceData> const &event) {
-  auto &[message_info, reference_data] = event;
+  auto &reference_data = event.value;
   // log::debug("reference_data={}"sv, reference_data);
   auto &instrument = shared_.get_instrument(reference_data.exchange, reference_data.symbol);
   if (instrument(reference_data)) {
@@ -103,8 +103,8 @@ void Controller::operator()(Event<ReferenceData> const &event) {
 // however, for high volume throughput one might consider buffering and postpone persisting until the timer event fires
 void Controller::operator()(Event<TradeUpdate> const &event) {
   log::info<1>("event={}"sv, event);
-  auto &[message_info, trade_update] = event;
-  (*this)(message_info);
+  (*this)(event.message_info);
+  auto &trade_update = event.value;
   // note! we drop any trades prior to our last seen exchange time
   if (trade_update.create_time_utc <= last_exchange_time_utc_) {
     log::warn<1>("*** DROP *** ({} <= {})"sv, trade_update.create_time_utc, last_exchange_time_utc_);
