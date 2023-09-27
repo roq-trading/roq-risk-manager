@@ -49,19 +49,23 @@ void Position::operator()(TradeUpdate const &trade_update, Instrument const &ins
 }
 
 double Position::long_position_limit() const {
-  return std::max(0.0, long_position_limit_ - long_position_);
+  // return std::max(0.0, long_position_limit_ - long_position_);
+  return long_position_limit_;
 }
 
 double Position::short_position_limit() const {
-  return std::max(0.0, short_position_limit_ - short_position_);
+  // return std::max(0.0, short_position_limit_ - short_position_);
+  return short_position_limit_;
 }
 
 double Position::long_risk_exposure_limit() const {
-  return std::max(0.0, long_risk_exposure_limit_ - long_position_);
+  // return std::max(0.0, long_risk_exposure_limit_ - long_position_);
+  return long_risk_exposure_limit_;
 }
 
 double Position::short_risk_exposure_limit() const {
-  return std::max(0.0, short_risk_exposure_limit_ - short_position_);
+  // return std::max(0.0, short_risk_exposure_limit_ - short_position_);
+  return short_risk_exposure_limit_;
 }
 
 }  // namespace risk

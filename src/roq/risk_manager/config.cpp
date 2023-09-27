@@ -130,7 +130,7 @@ R parse_limits(auto &node, auto const &name) {
   };
   if (find_and_remove(node, name, parse_helper)) {
   } else {
-    log::fatal(R"(Unexpected: did not find the "{}" table)"sv, name);
+    log::warn(R"(Did not find a "{}" table)"sv, name);
   }
   return result;
 }
