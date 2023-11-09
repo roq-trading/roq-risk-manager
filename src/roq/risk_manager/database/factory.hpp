@@ -10,7 +10,7 @@ namespace roq {
 namespace risk_manager {
 namespace database {
 
-struct ROQ_PUBLIC Factory final {
+struct Factory final {
   static std::unique_ptr<Session> create(std::string_view const &type, std::string_view const &params);
 };
 

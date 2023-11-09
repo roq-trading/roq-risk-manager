@@ -22,6 +22,7 @@ add_dependencies(${TARGET_NAME} ${TARGET_NAME}-flags-autogen-headers)
 target_link_libraries(
   ${TARGET_NAME}
   PRIVATE ${TARGET_NAME}-control
+          ${TARGET_NAME}-database-sqlite
           ${TARGET_NAME}-database
           ${TARGET_NAME}-flags
           ${TARGET_NAME}-risk
