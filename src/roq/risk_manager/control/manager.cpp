@@ -80,6 +80,10 @@ void Manager::operator()(io::net::tcp::Connection::Factory &factory) {
   sessions_.emplace(session_id, std::move(session));
 }
 
+void Manager::operator()(io::net::tcp::Connection::Factory &factory, io::NetworkAddress const &) {
+  (*this)(factory);
+}
+
 // Session::Handler
 
 void Manager::operator()(Session::Disconnected const &disconnected) {

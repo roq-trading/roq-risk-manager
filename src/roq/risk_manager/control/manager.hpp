@@ -41,6 +41,7 @@ struct Manager final : public Session::Handler, public io::net::tcp::Listener::H
  protected:
   // io::net::tcp::Listener::Handler
   void operator()(io::net::tcp::Connection::Factory &) override;
+  void operator()(io::net::tcp::Connection::Factory &, io::NetworkAddress const &) override;
 
   // Session::Handler
   void operator()(Session::Disconnected const &) override;
